@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Edit</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Review Edit: <span id="reviewTitle"></span></h1>
+  <p>Edit Type: <span id="reviewType"></span></p>
+  <p>Editor: <span id="reviewEditor"></span></p>
+
+  <h2>Original Text</h2>
+  <div id="originalText"></div>
+
+  <h2>Edited Text</h2>
+  <div id="editedText"></div>
+
+  <button id="backButton" onclick="goBack()">Back</button>
+  <div id="reviewActions" style="display: none;">
+    <button onclick="acceptEdit()">Accept Edit</button>
+    <button onclick="rejectEdit()">Reject Edit</button>
+  </div>
+
+  <script src="review.js"></script>
+</body>
+</html>
