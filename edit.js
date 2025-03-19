@@ -28,24 +28,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const { Editor, Mark, Node } = window.TiptapBundle;
 
-  const Comment = Mark.create({
+  const Comment = Node.create({
     name: 'comment',
+    group: 'inline',
+    inline: true,
+    atom: true,
     addAttributes() {
-      return { id: { default: null }, posted: { default: false } };
+      return { 
+        id: { default: null }, 
+        posted: { default: false }, 
+        text: { default: '' }
+      };
     },
     parseHTML() {
-      return [{ tag: 'span[data-comment-id]', getAttrs: dom => ({ 
-        id: dom.getAttribute('data-comment-id'), 
-        posted: dom.getAttribute('data-comment-posted') === 'true' 
-      }) }];
+      return [{ 
+        tag: 'span[data-comment-id]', 
+        getAttrs: dom => ({ 
+          id: dom.getAttribute('data-comment-id'), 
+          posted: dom.getAttribute('data-comment-posted') === 'true', 
+          text: dom.textContent 
+        }) 
+      }];
     },
-    renderHTML({ mark }) {
-      console.log("Rendering comment mark:", { id: mark.attrs.id, posted: mark.attrs.posted });
+    renderHTML({ node }) {
+      console.log("Rendering comment node:", { id: node.attrs.id, posted: node.attrs.posted });
       return ['span', { 
-        'data-comment-id': mark.attrs.id, 
-        'data-comment-posted': mark.attrs.posted ? 'true' : 'false', 
-        class: 'comment' + (mark.attrs.posted ? ' posted' : '')
-      }, 0];
+        'data-comment-id': node.attrs.id, 
+        'data-comment-posted': node.attrs.posted ? 'true' : 'false', 
+        class: 'comment' + (node.attrs.posted ? ' posted' : '')
+      }, node.attrs.text];
     }
   });
 
@@ -85,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const Document = Node.create({
     name: 'doc',
     topNode: true,
-    content: 'text*'
+    content: 'block+'
   });
 
   const Text = Node.create({
@@ -103,34 +114,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentEdit.comments) {
         currentEdit.comments.forEach(comment => {
           if (!comment.isSuggestion && comment.timestamp) {
-            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
+            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).insertContent({
+              type: 'comment',
+              attrs: { id: comment.id, posted: true, text: editor.state.doc.textBetween(comment.range.from, comment.range.to) }
+            }).run();
           } else if (comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
           }
         });
       }
       renderComments();
-
-      // Mutation observer to strip spaces around comment spans
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length) {
-            document.querySelectorAll('span[data-comment-id]').forEach(span => {
-              const prev = span.previousSibling;
-              const next = span.nextSibling;
-              if (prev && prev.nodeType === 3 && prev.textContent.trim() === '') {
-                console.log("Removing leading space node:", prev.textContent);
-                prev.remove();
-              }
-              if (next && next.nodeType === 3 && next.textContent.trim() === '') {
-                console.log("Removing trailing space node:", next.textContent);
-                next.remove();
-              }
-            });
-          }
-        });
-      });
-      observer.observe(editor.view.dom, { childList: true, subtree: true });
     },
     onUpdate: ({ editor }) => {
       currentEdit.text = editor.getHTML();
@@ -231,13 +224,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const commentId = Date.now().toString();
-    const fullText = editor.state.doc.textBetween(from, to);
-    const trimmedText = fullText.trim();
-    const offset = fullText.indexOf(trimmedText);
-    const adjustedFrom = from + offset;
-    const adjustedTo = adjustedFrom + trimmedText.length;
-    console.log("Adding comment:", { id: commentId, from, to, fullText, trimmedText, adjustedFrom, adjustedTo });
-    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId, posted: false }).run();
+    const text = editor.state.doc.textBetween(from, to).trim();
+    const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
+    const adjustedTo = adjustedFrom + text.length;
+    console.log("Adding comment:", { id: commentId, from, to, text, adjustedFrom, adjustedTo });
+    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).insertContent({
+      type: 'comment',
+      attrs: { id: commentId, posted: false, text }
+    }).run();
     comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
@@ -266,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
       console.log("Posting comment, pre-DOM:", editor.view.dom.innerHTML);
-      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
+      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).updateAttributes('comment', { posted: true }).run();
       console.log("Posted comment, mark updated:", { id: comment.id, range: comment.range });
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
