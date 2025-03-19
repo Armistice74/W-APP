@@ -37,7 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return [{ tag: 'span[data-comment-id]', getAttrs: dom => ({ id: dom.getAttribute('data-comment-id') }) }];
     },
     renderHTML({ mark }) {
-      return ['span', { 'data-comment-id': mark.attrs.id, class: 'comment' + (comments.find(c => c.id === mark.attrs.id && !c.isTyping) ? ' posted' : '') }, 0];
+      const isPosted = comments.find(c => c.id === mark.attrs.id && !c.isTyping);
+      console.log("Rendering comment mark:", { id: mark.attrs.id, isPosted });
+      return ['span', { 'data-comment-id': mark.attrs.id, class: 'comment' + (isPosted ? ' posted' : '') }, 0];
     }
   });
 
@@ -197,7 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (comment && comment.isTyping) {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      editor.chain().setMark('comment', { id: comment.id }).run(); // Ensure mark persists
+      // Reapply the mark to ensure it persists
+      editor.chain().focus().setTextSelection(comment.range).setMark('comment', { id: comment.id }).run();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
