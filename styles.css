@@ -1,7 +1,7 @@
 body {
   font-family: 'Arial', sans-serif;
   margin: 20px;
-  background-color: #2a2a2a;
+  background-color: #1a2a3a; /* Dark blue-scale */
   color: #000000; /* Black text */
   line-height: 1.6;
 }
@@ -18,7 +18,7 @@ body {
 
 #project-owner {
   font-size: 18px;
-  color: #b0b0b0;
+  color: #b0c0d0; /* Light blue-scale */
   margin: 5px 0 0 0;
 }
 
@@ -30,7 +30,7 @@ body {
 
 .editor {
   width: 66.66%;
-  background-color: #4a4a4a;
+  background-color: #2a3a4a; /* Medium blue-scale */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -40,7 +40,7 @@ body {
 
 .comments {
   width: 33.33%;
-  background-color: #3a3a3a;
+  background-color: #3a4a5a; /* Lighter blue-scale */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -49,7 +49,7 @@ body {
 
 #tool-bubble {
   position: absolute;
-  background-color: #3a3a3a;
+  background-color: #3a4a5a; /* Blue-scale */
   border-radius: 5px;
   padding: 5px;
   z-index: 10;
@@ -71,7 +71,7 @@ body {
 }
 
 .speech-bubble {
-  background-color: #4a4a4a;
+  background-color: #2a3a4a; /* Blue-scale */
   border-radius: 5px;
   padding: 10px;
   width: 80%;
@@ -85,7 +85,7 @@ body {
 
 .speech-bubble textarea {
   width: 100%;
-  background-color: #5a5a5a;
+  background-color: #4a5a6a; /* Light blue-scale */
   color: #000000; /* Black text */
   border: none;
   border-radius: 3px;
@@ -116,13 +116,13 @@ body {
 }
 
 .show-more {
-  color: #888;
+  color: #b0c0d0; /* Light blue-scale */
   cursor: pointer;
   margin-left: 5px;
 }
 
 .show-more:hover {
-  color: #bbb;
+  color: #d0e0f0; /* Lighter blue-scale */
 }
 
 .comment {
@@ -148,7 +148,7 @@ body {
 
 .suggestion-bubble {
   position: absolute;
-  background-color: #4a4a4a;
+  background-color: #2a3a4a; /* Blue-scale */
   border-radius: 5px;
   padding: 10px;
   z-index: 20;
@@ -157,7 +157,7 @@ body {
 
 .suggestion-bubble textarea {
   width: 100%;
-  background-color: #5a5a5a;
+  background-color: #4a5a6a; /* Light blue-scale */
   color: #000000; /* Black text */
   border: none;
   border-radius: 3px;
@@ -206,7 +206,7 @@ body {
 }
 
 .popup-content {
-  background-color: #3a3a3a;
+  background-color: #3a4a5a; /* Blue-scale */
   padding: 20px;
   border-radius: 5px;
   text-align: center;
@@ -214,7 +214,7 @@ body {
 
 .popup-content p {
   margin: 0 0 15px 0;
-  color: #e0e0e0;
+  color: #d0e0f0; /* Light blue-scale */
 }
 
 .popup-content button {

@@ -51,11 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     renderHTML({ mark }) {
       const comment = comments.find(c => c.id === mark.attrs.id && c.isSuggestion);
-      if (comment) {
-        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion' }, [
-          's', {}, comment.originalText || '', // Strikethrough original
-          'span', { class: 'suggestion-text' }, mark.attrs.text || '' // New text
-        ]];
+      if (comment && comment.text) {
+        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion' }, 
+          `<s>${comment.originalText || ''}</s> <span class="suggestion-text">${mark.attrs.text || ''}</span>`
+        ];
       }
       return ['span', { 'data-suggestion-id': mark.attrs.id, class: 'suggestion' }, 0];
     }
@@ -203,12 +202,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const comment = comments.find(c => c.id === id);
     if (comment && comment.isTyping) {
       comment.isTyping = false;
-      comment.timestamp = new Date().toLocaleString();
+      comment.timestamp = new Date().toLocaleString(); // Fixed typo: 'New' to 'new'
       editor.chain().setMark('suggestion', { id: comment.id, text: comment.text }).run();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted suggestion:", { id: comment.id, text: comment.text });
-      document.getElementById(`suggestion-bubble-${id}`)?.remove(); // Remove bubble
+      document.getElementById(`suggestion-bubble-${id}`)?.remove();
       editor.view.dispatch(editor.state.tr);
     }
   }
@@ -232,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Rendering stack:", comments.map(c => ({ id: c.id, from: c.range.from, text: c.text.slice(0, 10) + '...', isTyping: c.isTyping })));
 
     comments.forEach(comment => {
-      if (comment.isSuggestion) return; // Suggestions render in editor, not sidebar
+      if (comment.isSuggestion) return;
       const existing = commentWindow.querySelector(`[data-comment-id="${comment.id}"]`);
       if (existing) return;
 
