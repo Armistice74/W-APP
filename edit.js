@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   let comments = currentEdit.comments || [];
-  let activeBubble = null; // Track the current typing bubble
+  let activeBubble = null;
 
   function showToolBubble(from, to) {
     let bubble = document.getElementById('tool-bubble');
@@ -85,9 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.display = 'block';
 
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = null; // Clear old listeners
+    commentBtn.onclick = null;
     commentBtn.addEventListener('click', () => {
-      if (!activeBubble) addComment(from, to); // Only add if no active bubble
+      if (!activeBubble) addComment(from, to);
     });
   }
 
@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <textarea placeholder="Enter comment..."></textarea>
       <button class="confirm-btn">Confirm</button>
     `;
-    activeBubble = speechBubble; // Track this as the active bubble
+    activeBubble = speechBubble;
     commentWindow.appendChild(speechBubble);
 
     const textarea = speechBubble.querySelector('textarea');
@@ -125,6 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
 
+    // Sort comments by range.from for dynamic stacking
+    comments.sort((a, b) => a.range.from - b.range.from);
+
     const maxLines = 3;
     const lineHeight = 20;
     const truncated = text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
@@ -135,19 +138,48 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
     bubble.classList.add('posted');
     bubble.classList.remove('speech-bubble');
-    activeBubble = null; // Clear active bubble after posting
-    renderComments(); // Re-render all comments
+    activeBubble = null;
+
+    // Insert the new bubble in the correct stack position
+    insertCommentBubble(bubble);
+  }
+
+  function insertCommentBubble(newBubble) {
+    const commentWindow = document.getElementById('comments');
+    const existingBubbles = Array.from(commentWindow.querySelectorAll('.speech-bubble.posted'));
+    const newComment = comments.find(c => c.id === newBubble.dataset.commentId);
+
+    // Find where to insert based on range.from
+    let inserted = false;
+    for (let i = 0; i < existingBubbles.length; i++) {
+      const existingCommentId = existingBubbles[i].dataset.commentId;
+      const existingComment = comments.find(c => c.id === existingCommentId);
+      if (newComment.range.from < existingComment.range.from) {
+        commentWindow.insertBefore(newBubble, existingBubbles[i]);
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted) commentWindow.appendChild(newBubble);
+
+    // Add show-more listener if applicable
+    const showMore = newBubble.querySelector('.show-more');
+    if (showMore) {
+      showMore.addEventListener('click', () => {
+        const comment = comments.find(c => c.id === newBubble.dataset.commentId);
+        newBubble.innerHTML = `<p>${comment.text}</p>`;
+        newBubble.style.height = `${comment.text.split('\n').length * 20 + 20}px`;
+      });
+    }
   }
 
   function renderComments() {
     const commentWindow = document.getElementById('comments');
-    commentWindow.innerHTML = ''; // Clear existing
+    commentWindow.innerHTML = '';
 
-    // Sort comments by range.from (first highlighted character)
     comments.sort((a, b) => a.range.from - b.range.from);
 
     comments.forEach(comment => {
-      // Skip if this is the active typing bubble
       if (activeBubble && activeBubble.dataset.commentId === comment.id) return;
 
       const bubble = document.createElement('div');
@@ -155,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
       bubble.dataset.commentId = comment.id;
       const maxLines = 3;
       const lineHeight = 20;
-      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
+      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
       bubble.innerHTML = `
         <p>${truncated}</p>
         ${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
@@ -171,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Re-append active bubble if it exists (keeps it live while typing)
     if (activeBubble) commentWindow.appendChild(activeBubble);
   }
 });
