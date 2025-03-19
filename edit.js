@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     onCreate: ({ editor }) => {
       console.log("TipTap editor initialized");
       console.log("Editor content after init:", editor.getHTML());
+      renderComments();
     },
     onUpdate: ({ editor }) => {
       currentEdit.text = editor.getHTML();
@@ -98,14 +99,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentWindow = document.getElementById('comments');
     const speechBubble = document.createElement('div');
     speechBubble.className = 'speech-bubble';
+    speechBubble.dataset.commentId = commentId; // Tie to comment ID
     speechBubble.innerHTML = `
       <textarea placeholder="Enter comment..."></textarea>
       <button class="confirm-btn">Confirm</button>
     `;
     commentWindow.appendChild(speechBubble);
-
-    const rect = editor.view.coordsAtPos(from);
-    speechBubble.style.top = `${rect.top - commentWindow.offsetTop}px`;
 
     const textarea = speechBubble.querySelector('textarea');
     textarea.addEventListener('input', () => adjustBubbleSize(speechBubble, textarea));
@@ -114,9 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function adjustBubbleSize(bubble, textarea) {
     bubble.style.height = 'auto';
-    const nextBubble = bubble.nextElementSibling;
-    const maxHeight = nextBubble ? nextBubble.offsetTop - bubble.offsetTop - 10 : Infinity;
-    bubble.style.height = `${Math.min(textarea.scrollHeight + 40, maxHeight)}px`;
+    bubble.style.height = `${textarea.scrollHeight + 40}px`; // Fixed height for typing
   }
 
   function postComment(id, from, to, text, bubble) {
@@ -133,29 +130,25 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
     bubble.classList.add('posted');
-    bubble.classList.remove('speech-bubble'); // Clean up typing state
-    document.getElementById('comments').scrollTop = bubble.offsetTop;
-
-    const showMore = bubble.querySelector('.show-more');
-    if (showMore) {
-      showMore.addEventListener('click', () => {
-        bubble.innerHTML = `<p>${text}</p>`;
-        bubble.style.height = `${text.split('\n').length * lineHeight + 20}px`;
-      });
-    }
+    bubble.classList.remove('speech-bubble'); // Transform to posted state
+    renderComments(); // Refresh all comments to stack properly
   }
 
   function renderComments() {
     const commentWindow = document.getElementById('comments');
-    commentWindow.innerHTML = '';
+    commentWindow.innerHTML = ''; // Clear and rebuild
     comments.forEach(comment => {
       const bubble = document.createElement('div');
       bubble.className = 'speech-bubble posted';
+      bubble.dataset.commentId = comment.id;
       const maxLines = 3;
       const lineHeight = 20;
       const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
-      bubble.innerHTML = `<p>${truncated}</p>${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}`;
-      bubble.style.top = `${editor.view.coordsAtPos(comment.range.from).top - commentWindow.offsetTop}px`;
+      bubble.innerHTML = `
+        <p>${truncated}</p>
+        ${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
+      `;
+      bubble.style.height = `${Math.min(comment.text.split('\n').length, maxLines) * lineHeight + 20}px`;
       commentWindow.appendChild(bubble);
       const showMore = bubble.querySelector('.show-more');
       if (showMore) {
@@ -166,6 +159,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  editor.on('create', () => renderComments());
 });

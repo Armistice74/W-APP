@@ -52,17 +52,16 @@ body {
 }
 
 .speech-bubble {
-  position: absolute;
   background-color: #4a4a4a;
   border-radius: 5px;
   padding: 10px;
   width: 80%;
   z-index: 5;
+  margin-bottom: 10px; /* Stack spacing */
 }
 
 .speech-bubble.posted {
   position: static;
-  margin-bottom: 10px;
 }
 
 .speech-bubble textarea {
@@ -104,7 +103,7 @@ body {
 }
 
 .comment {
-  background-color: #d1c4a0; /* Softer beige */
+  background-color: #d1c4a0;
   padding: 2px 5px;
   border-radius: 3px;
 }
