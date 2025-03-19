@@ -94,12 +94,13 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     onSelectionUpdate: ({ editor }) => {
       const { from, to } = editor.state.selection;
-      if (from !== to) showToolBubble(from, to);
+      if (from !== to && !isSuggestionMode()) showToolBubble(from, to);
       else hideToolBubble();
     }
   });
 
   let comments = currentEdit.comments || [];
+  let suggestionMode = false;
 
   document.getElementById("editor").addEventListener('click', (e) => {
     const span = e.target.closest('span[data-comment-id], span[data-suggestion-id]');
@@ -108,6 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Clicked highlight:", commentId);
       highlightCommentBubble(commentId);
     }
+  });
+
+  document.getElementById("suggestion-mode").addEventListener('change', (e) => {
+    suggestionMode = e.target.checked;
+    console.log("Suggestion mode:", suggestionMode ? "ON" : "OFF");
+    const editorDiv = document.getElementById("editor");
+    editorDiv.contentEditable = suggestionMode;
+    if (!suggestionMode) {
+      finalizeSuggestions();
+    }
+    editorDiv.focus();
   });
 
   document.getElementById("submit-edits").addEventListener('click', () => {
@@ -132,10 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!bubble) {
       bubble = document.createElement('div');
       bubble.id = 'tool-bubble';
-      bubble.innerHTML = `
-        <button id="tool-comment-btn">Comment</button>
-        <button id="tool-suggestion-btn">Suggestion</button>
-      `;
+      bubble.innerHTML = `<button id="tool-comment-btn">Comment</button>`;
       document.body.appendChild(bubble);
     }
     const rect = editor.view.coordsAtPos(from);
@@ -148,16 +157,15 @@ document.addEventListener("DOMContentLoaded", () => {
       addComment(from, to);
       hideToolBubble();
     };
-    const suggestionBtn = document.getElementById("tool-suggestion-btn");
-    suggestionBtn.onclick = () => {
-      addSuggestion(from, to);
-      hideToolBubble();
-    };
   }
 
   function hideToolBubble() {
     const bubble = document.getElementById('tool-bubble');
     if (bubble) bubble.style.display = 'none';
+  }
+
+  function isSuggestionMode() {
+    return suggestionMode;
   }
 
   function addComment(from, to) {
@@ -169,16 +177,12 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
     comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
-    currentEdit.comments = comments;
+    currentEdit.comments = comments redistribute();
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     renderComments();
   }
 
   function addSuggestion(from, to) {
-    if (comments.some(c => c.isTyping)) {
-      console.log("Blocked: Already typing a suggestion");
-      return;
-    }
     const commentId = Date.now().toString();
     const originalText = editor.state.doc.textBetween(from, to);
     console.log("Adding suggestion:", { id: commentId, from, to, originalText });
@@ -186,7 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
     comments.push({ id: commentId, text: originalText, originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-    renderSuggestionInline(commentId, from, to);
   }
 
   function postComment(id) {
@@ -202,21 +205,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function postSuggestion(id) {
-    const comment = comments.find(c => c.id === id);
-    if (comment && comment.isTyping) {
-      const span = editor.view.dom.querySelector(`[data-suggestion-id="${id}"]`);
-      const newText = span.textContent;
-      comment.text = newText;
-      comment.isTyping = false;
-      comment.timestamp = new Date().toLocaleString();
-      editor.chain().setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
-      currentEdit.comments = comments;
-      sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-      console.log("Posted suggestion:", { id: comment.id, text: comment.text, original: comment.originalText });
-      span.contentEditable = false;
-      editor.view.dispatch(editor.state.tr);
-    }
+  function finalizeSuggestions() {
+    comments.forEach(comment => {
+      if (comment.isSuggestion && comment.isTyping) {
+        const span = editor.view.dom.querySelector(`[data-suggestion-id="${comment.id}"]`);
+        if (span) {
+          comment.text = span.textContent;
+          comment.isTyping = false;
+          comment.timestamp = new Date().toLocaleString();
+          editor.chain().setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
+          console.log("Finalized suggestion:", { id: comment.id, text: comment.text, original: comment.originalText });
+          span.contentEditable = false;
+        }
+      }
+    });
+    currentEdit.comments = comments;
+    sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+    editor.view.dispatch(editor.state.tr);
   }
 
   function highlightCommentBubble(commentId) {
@@ -288,25 +293,25 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.height = `${textarea.scrollHeight + 40}px`;
   }
 
-  function renderSuggestionInline(commentId, from, to) {
-    const span = editor.view.dom.querySelector(`[data-suggestion-id="${commentId}"]`);
-    span.contentEditable = true;
-    span.focus();
-
-    const comment = comments.find(c => c.id === commentId);
-    span.oninput = () => {
-      comment.text = span.textContent;
-    };
-    span.onblur = () => {
-      console.log("Suggestion blur:", commentId);
-      postSuggestion(commentId);
-    };
-    span.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        console.log("Suggestion Enter:", commentId);
-        postSuggestion(commentId);
+  editor.view.dom.addEventListener('input', (e) => {
+    if (isSuggestionMode()) {
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const start = range.startOffset;
+      const end = range.endOffset;
+      const node = range.startContainer.parentElement;
+      if (node && node.dataset.suggestionId) {
+        const commentId = node.dataset.suggestionId;
+        const comment = comments.find(c => c.id === commentId && c.isSuggestion);
+        if (comment) {
+          comment.text = node.textContent;
+          console.log("Suggestion updated live:", { id: commentId, text: comment.text });
+        } else {
+          addSuggestion(start, end);
+        }
+      } else if (range.startContainer.nodeType === 3) {
+        addSuggestion(start, end);
       }
-    };
-  }
+    }
+  });
 });
