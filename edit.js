@@ -210,11 +210,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const commentId = Date.now().toString();
-    const selection = editor.state.selection;
-    const text = editor.state.doc.textBetween(from, to).trim();
-    const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
-    const adjustedTo = adjustedFrom + text.length; // Exact bounds of text
-    console.log("Adding comment, selection:", { from, to, text, adjustedFrom, adjustedTo });
+    const fullText = editor.state.doc.textBetween(from, to);
+    const trimmedText = fullText.trim();
+    const offset = fullText.indexOf(trimmedText);
+    const adjustedFrom = from + offset;
+    const adjustedTo = adjustedFrom + trimmedText.length;
+    console.log("Adding comment:", { id: commentId, from, to, fullText, trimmedText, adjustedFrom, adjustedTo });
     editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId, posted: false }).run();
     comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
