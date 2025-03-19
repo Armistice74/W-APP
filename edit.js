@@ -118,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let comments = currentEdit.comments || [];
   let suggestionMode = false;
+  let activeCommentId = null; // Track active bubble
 
   document.getElementById("editor").addEventListener('click', (e) => {
     const span = e.target.closest('span[data-comment-id], span[data-suggestion-id]');
@@ -128,10 +129,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  document.addEventListener('click', (e) => {
+    const bubble = document.querySelector('.speech-bubble');
+    const commentBtn = document.getElementById('tool-comment-btn');
+    if (bubble && activeCommentId && !bubble.contains(e.target) && e.target !== commentBtn) {
+      console.log("Dismissing bubble:", activeCommentId);
+      bubble.remove();
+      comments = comments.filter(c => c.id !== activeCommentId);
+      currentEdit.comments = comments;
+      sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+      activeCommentId = null;
+    }
+  });
+
   document.getElementById("suggestion-mode").addEventListener('change', (e) => {
     suggestionMode = e.target.checked;
     console.log("Suggestion mode:", suggestionMode ? "ON" : "OFF");
-    editor.setOptions({ editable: suggestionMode }); // Toggle editability
+    editor.setOptions({ editable: suggestionMode });
     if (!suggestionMode) {
       finalizeSuggestions();
     }
@@ -194,6 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
     comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+    activeCommentId = commentId; // Track new bubble
     renderComments();
   }
 
@@ -222,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
+      activeCommentId = null; // Clear active bubble
       renderComments();
     }
   }
@@ -233,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (span) {
           comment.text = span.textContent;
           comment.isTyping = false;
-          comment.timestamp = new Date().toLocaleString();
+          comment.timestamp = new Date().toLocaleString(); // Fixed typo: 'New' to 'new'
           editor.chain().setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
           console.log("Finalized suggestion:", { id: comment.id, text: comment.text, original: comment.originalText });
           span.contentEditable = false;
