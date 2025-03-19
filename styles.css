@@ -1,7 +1,7 @@
 body {
   font-family: 'Arial', sans-serif;
   margin: 20px;
-  background-color: #a6b3c6; /* 20% darker than #d0e0f0 */
+  background-color: #8693b6; /* 20% bluer than #a6b3c6 */
   color: #000000; /* Black text */
   line-height: 1.6;
 }
@@ -18,7 +18,7 @@ body {
 
 #project-owner {
   font-size: 18px;
-  color: #6a8296; /* Muted blue */
+  color: #5a7296; /* 20% bluer than #6a8296 */
   margin: 5px 0 0 0;
 }
 
@@ -30,7 +30,7 @@ body {
 
 .editor {
   width: 66.66%;
-  background-color: #d0e0f0; /* Light blue */
+  background-color: #b0c0e0; /* 20% bluer than #d0e0f0 */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -40,7 +40,7 @@ body {
 
 .comments {
   width: 33.33%;
-  background-color: #d0e0f0; /* Light blue */
+  background-color: #b0c0e0; /* 20% bluer than #d0e0f0 */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -49,7 +49,7 @@ body {
 
 #tool-bubble {
   position: absolute;
-  background-color: #b0c8e0; /* Medium light blue */
+  background-color: #90a8d0; /* 20% bluer than #b0c8e0 */
   border-radius: 5px;
   padding: 5px;
   z-index: 10;
@@ -58,7 +58,7 @@ body {
 }
 
 #tool-bubble button {
-  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
+  background-color: #3a4a5a; /* 20% bluer than #4a5a6a */
   color: #fff;
   border: none;
   padding: 5px 10px;
@@ -67,11 +67,11 @@ body {
 }
 
 #tool-bubble button:hover {
-  background-color: #3a4a5a; /* Slightly lighter for hover */
+  background-color: #2a3a4a; /* Slightly lighter blue hover */
 }
 
 .speech-bubble {
-  background-color: #b0c8e0; /* Medium light blue */
+  background-color: #90a8d0; /* 20% bluer than #b0c8e0 */
   border-radius: 5px;
   padding: 10px;
   width: 80%;
@@ -85,7 +85,7 @@ body {
 
 .speech-bubble textarea {
   width: 100%;
-  background-color: #d0e0f0; /* Light blue */
+  background-color: #b0c0e0; /* 20% bluer than #d0e0f0 */
   color: #000000; /* Black text */
   border: none;
   border-radius: 3px;
@@ -93,7 +93,7 @@ body {
 }
 
 .speech-bubble .confirm-btn {
-  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
+  background-color: #3a4a5a; /* 20% bluer than #4a5a6a */
   color: #fff;
   border: none;
   padding: 5px 10px;
@@ -103,7 +103,7 @@ body {
 }
 
 .speech-bubble .confirm-btn:hover {
-  background-color: #3a4a5a;
+  background-color: #2a3a4a;
 }
 
 .speech-bubble p {
@@ -112,38 +112,38 @@ body {
 }
 
 .speech-bubble.highlighted {
-  border: 2px solid #4a5a6a; /* Match button color */
+  border: 2px solid #3a4a5a; /* Match button color */
 }
 
 .show-more {
-  color: #6a8296; /* Muted blue */
+  color: #5a7296; /* 20% bluer than #6a8296 */
   cursor: pointer;
   margin-left: 5px;
 }
 
 .show-more:hover {
-  color: #4a5a6a; /* Button color */
+  color: #3a4a5a; /* Match button color */
 }
 
 .comment {
-  background-color: #d0e0f0; /* Light blue for active comments */
+  background-color: #b0c0e0; /* 20% bluer than #d0e0f0 */
   padding: 2px 5px;
   border-radius: 3px;
 }
 
 .comment.posted {
-  background-color: #b0c8e0; /* Medium light blue for posted comments */
+  background-color: #90a8d0; /* 20% bluer than #b0c8e0 */
 }
 
 .suggestion {
-  background-color: #d0e0f0; /* Light blue for active suggestions */
+  background-color: #b0c0e0; /* 20% bluer than #d0e0f0 */
   padding: 2px 5px;
   border-radius: 3px;
   position: relative;
 }
 
 .suggestion.posted {
-  background-color: #b0c8e0; /* Medium light blue for posted suggestions */
+  background-color: #90a8d0; /* 20% bluer than #b0c8e0 */
 }
 
 .suggestion-text {
@@ -157,7 +157,7 @@ body {
 }
 
 .suggestion-confirm .confirm-btn {
-  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
+  background-color: #3a4a5a; /* 20% bluer than #4a5a6a */
   color: #fff;
   border: none;
   padding: 5px 10px;
@@ -166,12 +166,12 @@ body {
 }
 
 .suggestion-confirm .confirm-btn:hover {
-  background-color: #3a4a5a;
+  background-color: #2a3a4a;
 }
 
 #submit-edits {
   margin-top: 20px;
-  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
+  background-color: #3a4a5a; /* 20% bluer than #4a5a6a */
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -180,7 +180,7 @@ body {
 }
 
 #submit-edits:hover {
-  background-color: #3a4a5a;
+  background-color: #2a3a4a;
 }
 
 .popup {
@@ -197,7 +197,7 @@ body {
 }
 
 .popup-content {
-  background-color: #b0c8e0; /* Medium light blue */
+  background-color: #90a8d0; /* 20% bluer than #b0c8e0 */
   padding: 20px;
   border-radius: 5px;
   text-align: center;
@@ -209,7 +209,7 @@ body {
 }
 
 .popup-content button {
-  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
+  background-color: #3a4a5a; /* 20% bluer than #4a5a6a */
   color: #fff;
   border: none;
   padding: 5px 15px;
@@ -218,5 +218,5 @@ body {
 }
 
 .popup-content button:hover {
-  background-color: #3a4a5a;
+  background-color: #2a3a4a;
 }

@@ -196,7 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function postSuggestion(id) {
     const comment = comments.find(c => c.id === id);
     if (comment && comment.isTyping) {
-      const newText = document.getElementById(`suggestion-input-${id}`).value;
+      const span = editor.view.dom.querySelector(`[data-suggestion-id="${id}"]`);
+      const newText = span.textContent;
       comment.text = newText;
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
@@ -204,7 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted suggestion:", { id: comment.id, text: comment.text });
-      document.getElementById(`suggestion-confirm-${id}`).remove();
+      document.getElementById(`suggestion-confirm-${id}`)?.remove();
+      span.contentEditable = false;
       editor.view.dispatch(editor.state.tr);
     }
   }
@@ -284,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmBtn.id = `suggestion-confirm-${commentId}`;
     confirmBtn.className = 'suggestion-confirm';
     confirmBtn.style.left = `${rect.left + window.scrollX}px`;
-    confirmBtn.style.top = `${rect.bottom + window.scrollY + 5}px`; // Below highlight
+    confirmBtn.style.top = `${rect.bottom + window.scrollY + 5}px`;
     confirmBtn.innerHTML = `<button class="confirm-btn">Confirm</button>`;
     document.body.appendChild(confirmBtn);
 
@@ -299,7 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmBtn.querySelector('.confirm-btn').onclick = () => {
       console.log("Confirm clicked for suggestion:", commentId);
       postSuggestion(commentId);
-      span.contentEditable = false;
     };
   }
 });
