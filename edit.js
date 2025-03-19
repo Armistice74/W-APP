@@ -24,7 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("Initial content set to:", initialContent);
 
   // Set project title and owner
-  document.getElementById("project-title").textContent = `${currentEdit.title} by ${currentEdit.user}`;
+  document.getElementById("project-title").textContent = currentEdit.title;
+  document.getElementById("project-owner").textContent = `By ${currentEdit.user}`;
 
   const { Editor, Mark, Node } = window.TiptapBundle;
 
@@ -82,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Submit Edits button
   document.getElementById("submit-edits").addEventListener('click', () => {
     document.getElementById("submit-confirm").style.display = 'block';
   });
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const projectIndex = projects.findIndex(p => p.id === currentEdit.id);
     if (projectIndex !== -1) {
       projects[projectIndex].editedSample = editor.getHTML();
-      projects[projectIndex].comments = comments.filter(c => !c.isTyping); // Only save posted comments
+      projects[projectIndex].comments = comments.filter(c => !c.isTyping);
       localStorage.setItem("projects", JSON.stringify(projects));
     }
     sessionStorage.removeItem("currentEdit");

@@ -6,16 +6,26 @@ body {
   line-height: 1.6;
 }
 
-#project-title {
+#project-header {
   margin-bottom: 20px;
+}
+
+#project-title {
   font-size: 24px;
   color: #e0e0e0;
+  margin: 0;
+}
+
+#project-owner {
+  font-size: 18px;
+  color: #b0b0b0; /* Slightly muted for contrast */
+  margin: 5px 0 0 0;
 }
 
 .editor-container {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 100px); /* Adjust for title and button */
+  height: calc(100vh - 100px);
 }
 
 .editor {
@@ -113,13 +123,13 @@ body {
 }
 
 .comment {
-  background-color: #b8a88a;
+  background-color: #c8b8a0; /* Subtle active highlight */
   padding: 2px 5px;
   border-radius: 3px;
 }
 
 .comment.posted {
-  background-color: #9e8e70;
+  background-color: #a89a82; /* Even subtler posted highlight */
 }
 
 #submit-edits {
