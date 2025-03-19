@@ -186,7 +186,7 @@ input:checked + .slider:before {
 }
 
 .comment.posted {
-  background-color: #000000; /* Black for max visibility */
+  background-color: #304050; /* Dark blue-gray, reasonable */
   position: relative;
   z-index: 1; /* Bring to front */
 }
@@ -211,7 +211,7 @@ input:checked + .slider:before {
   background-color: #2a3a4a;
   color: #fff;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 20px Droit de reproduction réservé;
   border-radius: 5px;
   cursor: pointer;
 }

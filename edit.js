@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     onCreate: ({ editor }) => {
       console.log("TipTap editor initialized");
       console.log("Editor content after init:", editor.getHTML());
-      // Reapply existing comment marks
+      editor.view.dom.contentEditable = false; // Default off
       if (currentEdit.comments) {
         currentEdit.comments.forEach(comment => {
           if (!comment.isSuggestion && comment.timestamp) {
@@ -131,6 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("suggestion-mode").addEventListener('change', (e) => {
     suggestionMode = e.target.checked;
     console.log("Suggestion mode:", suggestionMode ? "ON" : "OFF");
+    editor.view.dom.contentEditable = suggestionMode; // Toggle global editability
     if (!suggestionMode) {
       finalizeSuggestions();
     }
@@ -190,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentId = Date.now().toString();
     const text = editor.state.doc.textBetween(from, to).trim();
     const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
-    const adjustedTo = to - (editor.state.doc.textBetween(from, to).length - text.length) / 2;
+    const adjustedTo = adjustedFrom + text.length; // Precise end, no padding
     console.log("Adding comment:", { id: commentId, from: adjustedFrom, to: adjustedTo, text });
     editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId, posted: false }).run();
     comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
@@ -203,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentId = Date.now().toString();
     const originalText = editor.state.doc.textBetween(from, to).trim();
     const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - originalText.length) / 2;
-    const adjustedTo = to - (editor.state.doc.textBetween(from, to).length - originalText.length) / 2;
+    const adjustedTo = adjustedFrom + originalText.length; // Precise end
     console.log("Adding suggestion:", { id: commentId, from: adjustedFrom, to: adjustedTo, originalText });
     editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('suggestion', { id: commentId, text: originalText, original: originalText }).run();
     comments.push({ id: commentId, text: originalText, originalText, range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
@@ -219,7 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (comment && comment.isTyping) {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      // Update mark with posted state
       editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
       console.log("Posted comment, mark updated:", { id: comment.id, range: comment.range });
       currentEdit.comments = comments;
