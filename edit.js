@@ -84,10 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.display = 'block';
 
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = null;
-    commentBtn.addEventListener('click', () => {
-      if (!comments.some(c => c.isTyping)) addComment(from, to);
-    });
+    commentBtn.onclick = () => addComment(from, to); // Single listener, no stacking
   }
 
   function hideToolBubble() {
@@ -96,10 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function addComment(from, to) {
+    if (comments.some(c => c.isTyping)) {
+      console.log("Blocked: Already typing a comment");
+      return; // Block new comments while typing
+    }
     const commentId = Date.now().toString();
     console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
-    comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
+
+    const comment = { id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true };
+    comments.push(comment);
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
 
@@ -111,19 +114,21 @@ document.addEventListener("DOMContentLoaded", () => {
       <textarea placeholder="Enter comment..."></textarea>
       <button class="confirm-btn">Confirm</button>
     `;
+    commentWindow.appendChild(speechBubble); // Append first, then wire up
+
     const textarea = speechBubble.querySelector('textarea');
     const confirmBtn = speechBubble.querySelector('.confirm-btn');
-
     textarea.oninput = () => {
-      const comment = comments.find(c => c.id === commentId);
       comment.text = textarea.value;
       adjustBubbleSize(speechBubble, textarea);
     };
-    confirmBtn.onclick = () => postComment(commentId);
+    confirmBtn.onclick = () => {
+      console.log("Confirm clicked for:", commentId);
+      postComment(commentId);
+    };
     textarea.focus();
 
-    renderComments(); // Full render to place it in stack
-    commentWindow.appendChild(speechBubble); // Append after render to ensure visibility
+    renderComments(); // Re-render stack
   }
 
   function adjustBubbleSize(bubble, textarea) {
@@ -138,9 +143,9 @@ document.addEventListener("DOMContentLoaded", () => {
       comment.timestamp = new Date().toLocaleString();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-      console.log("Posting comment, sorted order:", comments.map(c => ({ id: c.id, from: c.range.from })));
+      console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
       renderComments();
-      editor.view.dispatch(editor.state.tr); // Force re-render highlights
+      editor.view.dispatch(editor.state.tr); // Update highlights
     }
   }
 
@@ -149,10 +154,11 @@ document.addEventListener("DOMContentLoaded", () => {
     commentWindow.innerHTML = '';
 
     comments.sort((a, b) => a.range.from - b.range.from);
-    console.log("Rendering comments:", comments.map(c => ({ id: c.id, from: c.range.from, text: c.text.slice(0, 10) + '...', isTyping: c.isTyping })));
+    console.log("Rendering stack:", comments.map(c => ({ id: c.id, from: c.range.from, text: c.text.slice(0, 10) + '...', isTyping: c.isTyping })));
 
     comments.forEach(comment => {
-      if (commentWindow.querySelector(`[data-comment-id="${comment.id}"]`)) return;
+      const existing = commentWindow.querySelector(`[data-comment-id="${comment.id}"]`);
+      if (existing) return; // Skip if already in DOM
 
       const bubble = document.createElement('div');
       bubble.className = 'speech-bubble' + (comment.isTyping ? '' : ' posted');

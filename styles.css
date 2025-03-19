@@ -103,11 +103,11 @@ body {
 }
 
 .comment {
-  background-color: #b8a88a; /* Softer beige for active */
+  background-color: #b8a88a;
   padding: 2px 5px;
   border-radius: 3px;
 }
 
 .comment.posted {
-  background-color: #9e8e70; /* Even subtler for posted */
+  background-color: #9e8e70;
 }
