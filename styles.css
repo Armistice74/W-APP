@@ -18,7 +18,7 @@ body {
 
 #project-owner {
   font-size: 18px;
-  color: #b0b0b0; /* Slightly muted for contrast */
+  color: #b0b0b0;
   margin: 5px 0 0 0;
 }
 
@@ -52,6 +52,8 @@ body {
   border-radius: 5px;
   padding: 5px;
   z-index: 10;
+  display: flex;
+  gap: 5px; /* Space between buttons */
 }
 
 #tool-bubble button {
@@ -123,13 +125,13 @@ body {
 }
 
 .comment {
-  background-color: #c8b8a0; /* Subtle active highlight */
+  background-color: #d0e0f0; /* Very light blue for active */
   padding: 2px 5px;
   border-radius: 3px;
 }
 
 .comment.posted {
-  background-color: #a89a82; /* Even subtler posted highlight */
+  background-color: #b0c8e0; /* Slightly darker light blue for posted */
 }
 
 #submit-edits {

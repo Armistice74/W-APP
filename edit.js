@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
     : "<p>Start editing...</p>";
   console.log("Initial content set to:", initialContent);
 
-  // Set project title and owner
   document.getElementById("project-title").textContent = currentEdit.title;
   document.getElementById("project-owner").textContent = `By ${currentEdit.user}`;
 
@@ -97,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("projects", JSON.stringify(projects));
     }
     sessionStorage.removeItem("currentEdit");
-    window.location.href = "index.html#my-edits";
+    window.location.href = "index.html#myEditingWork";
   });
 
   function showToolBubble(from, to) {
@@ -105,7 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!bubble) {
       bubble = document.createElement('div');
       bubble.id = 'tool-bubble';
-      bubble.innerHTML = '<button id="tool-comment-btn">Comment</button>';
+      bubble.innerHTML = `
+        <button id="tool-comment-btn">Comment</button>
+        <button id="tool-suggestion-btn">Suggestion</button>
+      `;
       document.body.appendChild(bubble);
     }
     const rect = editor.view.coordsAtPos(from);
@@ -113,8 +115,16 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.top = `${rect.top + window.scrollY - 40}px`;
     bubble.style.display = 'block';
 
-    const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = () => addComment(from, to);
+    const commentBtn = document.getElementById("tool-comment-btn");
+    commentBtn.onclick = () => {
+      addComment(from, to);
+      hideToolBubble(); // Hide after click
+    };
+    const suggestionBtn = document.getElementById("tool-suggestion-btn");
+    suggestionBtn.onclick = () => {
+      console.log("Suggestion button clicked—no action yet");
+      hideToolBubble(); // Hide for now, no function
+    };
   }
 
   function hideToolBubble() {
