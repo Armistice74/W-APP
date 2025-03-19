@@ -69,7 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   let comments = currentEdit.comments || [];
-  let activeBubble = null;
 
   function showToolBubble(from, to) {
     let bubble = document.getElementById('tool-bubble');
@@ -87,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentBtn = document.getElementById('tool-comment-btn');
     commentBtn.onclick = null;
     commentBtn.addEventListener('click', () => {
-      if (!activeBubble) addComment(from, to);
+      if (!comments.some(c => c.isTyping)) addComment(from, to); // Prevent duplicates
     });
   }
 
@@ -98,21 +97,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function addComment(from, to) {
     const commentId = Date.now().toString();
+    console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
-    const commentWindow = document.getElementById('comments');
-    const speechBubble = document.createElement('div');
-    speechBubble.className = 'speech-bubble';
-    speechBubble.dataset.commentId = commentId;
-    speechBubble.innerHTML = `
-      <textarea placeholder="Enter comment..."></textarea>
-      <button class="confirm-btn">Confirm</button>
-    `;
-    activeBubble = speechBubble;
-    commentWindow.appendChild(speechBubble);
+    comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
+    currentEdit.comments = comments;
+    sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+    renderComments();
 
+    const speechBubble = document.querySelector(`[data-comment-id="${commentId}"]`);
     const textarea = speechBubble.querySelector('textarea');
-    textarea.addEventListener('input', () => adjustBubbleSize(speechBubble, textarea));
-    speechBubble.querySelector('.confirm-btn').addEventListener('click', () => postComment(commentId, from, to, textarea.value, speechBubble));
+    const confirmBtn = speechBubble.querySelector('.confirm-btn');
+
+    textarea.focus();
+    textarea.oninput = () => {
+      const comment = comments.find(c => c.id === commentId);
+      comment.text = textarea.value;
+      adjustBubbleSize(speechBubble, textarea);
+    };
+    confirmBtn.onclick = () => postComment(commentId);
   }
 
   function adjustBubbleSize(bubble, textarea) {
@@ -120,56 +122,15 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.height = `${textarea.scrollHeight + 40}px`;
   }
 
-  function postComment(id, from, to, text, bubble) {
-    comments.push({ id, text, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: new Date().toLocaleString() });
-    currentEdit.comments = comments;
-    sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-
-    // Sort comments by range.from for dynamic stacking
-    comments.sort((a, b) => a.range.from - b.range.from);
-
-    const maxLines = 3;
-    const lineHeight = 20;
-    const truncated = text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
-    bubble.innerHTML = `
-      <p>${truncated}</p>
-      ${text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
-    `;
-    bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
-    bubble.classList.add('posted');
-    bubble.classList.remove('speech-bubble');
-    activeBubble = null;
-
-    // Insert the new bubble in the correct stack position
-    insertCommentBubble(bubble);
-  }
-
-  function insertCommentBubble(newBubble) {
-    const commentWindow = document.getElementById('comments');
-    const existingBubbles = Array.from(commentWindow.querySelectorAll('.speech-bubble.posted'));
-    const newComment = comments.find(c => c.id === newBubble.dataset.commentId);
-
-    // Find where to insert based on range.from
-    let inserted = false;
-    for (let i = 0; i < existingBubbles.length; i++) {
-      const existingCommentId = existingBubbles[i].dataset.commentId;
-      const existingComment = comments.find(c => c.id === existingCommentId);
-      if (newComment.range.from < existingComment.range.from) {
-        commentWindow.insertBefore(newBubble, existingBubbles[i]);
-        inserted = true;
-        break;
-      }
-    }
-    if (!inserted) commentWindow.appendChild(newBubble);
-
-    // Add show-more listener if applicable
-    const showMore = newBubble.querySelector('.show-more');
-    if (showMore) {
-      showMore.addEventListener('click', () => {
-        const comment = comments.find(c => c.id === newBubble.dataset.commentId);
-        newBubble.innerHTML = `<p>${comment.text}</p>`;
-        newBubble.style.height = `${comment.text.split('\n').length * 20 + 20}px`;
-      });
+  function postComment(id) {
+    const comment = comments.find(c => c.id === id);
+    if (comment && comment.isTyping) {
+      comment.isTyping = false;
+      comment.timestamp = new Date().toLocaleString();
+      currentEdit.comments = comments;
+      sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+      console.log("Posting comment, sorted order:", comments.map(c => ({ id: c.id, from: c.range.from })));
+      renderComments();
     }
   }
 
@@ -178,31 +139,39 @@ document.addEventListener("DOMContentLoaded", () => {
     commentWindow.innerHTML = '';
 
     comments.sort((a, b) => a.range.from - b.range.from);
+    console.log("Rendering comments:", comments.map(c => ({ id: c.id, from: c.range.from, text: c.text.slice(0, 10) + '...', isTyping: c.isTyping })));
 
     comments.forEach(comment => {
-      if (activeBubble && activeBubble.dataset.commentId === comment.id) return;
+      // Skip if already rendered this ID
+      if (commentWindow.querySelector(`[data-comment-id="${comment.id}"]`)) return;
 
       const bubble = document.createElement('div');
-      bubble.className = 'speech-bubble posted';
+      bubble.className = 'speech-bubble' + (comment.isTyping ? '' : ' posted');
       bubble.dataset.commentId = comment.id;
-      const maxLines = 3;
-      const lineHeight = 20;
-      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
-      bubble.innerHTML = `
-        <p>${truncated}</p>
-        ${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
-      `;
-      bubble.style.height = `${Math.min(comment.text.split('\n').length, maxLines) * lineHeight + 20}px`;
-      commentWindow.appendChild(bubble);
-      const showMore = bubble.querySelector('.show-more');
-      if (showMore) {
-        showMore.addEventListener('click', () => {
-          bubble.innerHTML = `<p>${comment.text}</p>`;
-          bubble.style.height = `${comment.text.split('\n').length * lineHeight + 20}px`;
-        });
-      }
-    });
 
-    if (activeBubble) commentWindow.appendChild(activeBubble);
+      if (comment.isTyping) {
+        bubble.innerHTML = `
+          <textarea placeholder="Enter comment...">${comment.text}</textarea>
+          <button class="confirm-btn">Confirm</button>
+        `;
+      } else {
+        const maxLines = 3;
+        const lineHeight = 20;
+        const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
+        bubble.innerHTML = `
+          <p>${truncated}</p>
+          ${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
+        `;
+        bubble.style.height = `${Math.min(comment.text.split('\n').length, maxLines) * lineHeight + 20}px`;
+        const showMore = bubble.querySelector('.show-more');
+        if (showMore) {
+          showMore.onclick = () => {
+            bubble.innerHTML = `<p>${comment.text}</p>`;
+            bubble.style.height = `${comment.text.split('\n').length * lineHeight + 20}px`;
+          };
+        }
+      }
+      commentWindow.appendChild(bubble);
+    });
   }
 });
