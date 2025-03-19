@@ -114,12 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("suggestion-mode").addEventListener('change', (e) => {
     suggestionMode = e.target.checked;
     console.log("Suggestion mode:", suggestionMode ? "ON" : "OFF");
-    const editorDiv = document.getElementById("editor");
-    editorDiv.contentEditable = suggestionMode;
     if (!suggestionMode) {
       finalizeSuggestions();
     }
-    editorDiv.focus();
   });
 
   document.getElementById("submit-edits").addEventListener('click', () => {
@@ -177,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
     comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
-    currentEdit.comments = comments; // Fixed typo: removed 'redistribute()'
+    currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     renderComments();
   }
@@ -190,6 +187,9 @@ document.addEventListener("DOMContentLoaded", () => {
     comments.push({ id: commentId, text: originalText, originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+    const span = editor.view.dom.querySelector(`[data-suggestion-id="${commentId}"]`);
+    span.contentEditable = true;
+    span.focus();
   }
 
   function postComment(id) {
