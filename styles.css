@@ -22,12 +22,12 @@ body {
   margin: 5px 0 0 0;
 }
 
-/* W3Schools Toggle Switch */
+/* W3Schools Toggle Switch - 10% smaller */
 .switch {
   position: relative;
   display: inline-block;
-  width: 60px;
-  height: 34px;
+  width: 54px; /* 60px - 10% */
+  height: 31px; /* 34px - 10% */
   margin-bottom: 10px;
 }
 
@@ -46,14 +46,14 @@ body {
   bottom: 0;
   background-color: #ccc;
   transition: .4s;
-  border-radius: 34px;
+  border-radius: 31px;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
+  height: 23px; /* 26px - 10% */
+  width: 23px; /* 26px - 10% */
   left: 4px;
   bottom: 4px;
   background-color: white;
@@ -66,7 +66,12 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(26px);
+  transform: translateX(23px); /* Adjusted for smaller size */
+}
+
+.suggestion-label {
+  margin-left: 10px; /* Increased spacing */
+  color: #000000; /* Black text */
 }
 
 .editor-container {
