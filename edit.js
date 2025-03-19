@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const { Editor, Mark } = window.TiptapBundle;
+  const StarterKit = window.TiptapBundle.StarterKit;
 
   const Comment = Mark.create({
     name: 'comment',
@@ -30,9 +31,45 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  const Underline = {
+    name: 'underline',
+    addCommands() {
+      return {
+        toggleUnderline: () => ({ chain }) => chain().toggleMark('underline').run()
+      };
+    },
+    parseHTML() {
+      return [{ tag: 'u' }];
+    },
+    renderHTML() {
+      return ['u', 0];
+    }
+  };
+
+  const FontSize = Mark.create({
+    name: 'fontSize',
+    addAttributes() {
+      return { size: { default: null, parseHTML: element => element.style.fontSize, renderHTML: attributes => ({ style: `font-size: ${attributes.size}` }) } };
+    },
+    parseHTML() {
+      return [{ tag: 'span[style*=font-size]' }];
+    },
+    renderHTML({ mark }) {
+      return ['span', { style: `font-size: ${mark.attrs.size}` }, 0];
+    },
+    addCommands() {
+      return { setFontSize: size => ({ chain }) => chain().setMark('fontSize', { size }).run() };
+    }
+  });
+
   const editor = new Editor({
     element: document.getElementById("editor"),
-    extensions: [Comment],
+    extensions: [
+      StarterKit.configure({ bulletList: { keepMarks: true }, orderedList: { keepMarks: true } }),
+      Comment,
+      Underline,
+      FontSize
+    ],
     content: currentEdit.text || "<p>Start editing...</p>",
     onCreate: () => console.log("TipTap editor initialized"),
     onUpdate: ({ editor }) => {
@@ -43,7 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const { from, to } = editor.state.selection;
       if (from !== to) showToolBubble(from, to);
       else hideToolBubble();
+      ['bold', 'italic', 'underline'].forEach(mark => {
+        document.getElementById(`${mark}-btn`).classList.toggle('active', editor.isActive(mark));
+      });
     }
+  });
+
+  document.getElementById('bold-btn').addEventListener('click', () => editor.chain().focus().toggleBold().run());
+  document.getElementById('italic-btn').addEventListener('click', () => editor.chain().focus().toggleItalic().run());
+  document.getElementById('underline-btn').addEventListener('click', () => editor.chain().focus().toggleUnderline().run());
+  document.getElementById('font-size').addEventListener('change', (e) => editor.chain().focus().setFontSize(e.target.value).run());
+  document.getElementById('comment-btn').addEventListener('click', () => {
+    const { from, to } = editor.state.selection;
+    if (from !== to) addComment(from, to);
   });
 
   let comments = currentEdit.comments || [];
@@ -101,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
 
     const maxLines = 3;
-    const lineHeight = 20; // Approx px per line
+    const lineHeight = 20;
     const truncated = text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
     bubble.innerHTML = `
       <p>${truncated}</p>
@@ -109,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
     bubble.classList.add('posted');
+    document.getElementById('comments').scrollTop = bubble.offsetTop;
 
     const showMore = bubble.querySelector('.show-more');
     if (showMore) {
@@ -118,4 +168,28 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   }
+
+  function renderComments() {
+    const commentWindow = document.getElementById('comments');
+    commentWindow.innerHTML = '';
+    comments.forEach(comment => {
+      const bubble = document.createElement('div');
+      bubble.className = 'speech-bubble posted';
+      const maxLines = 3;
+      const lineHeight = 20;
+      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
+      bubble.innerHTML = `<p>${truncated}</p>${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}`;
+      bubble.style.top = `${editor.view.coordsAtPos(comment.range.from).top - commentWindow.offsetTop}px`;
+      commentWindow.appendChild(bubble);
+      const showMore = bubble.querySelector('.show-more');
+      if (showMore) {
+        showMore.addEventListener('click', () => {
+          bubble.innerHTML = `<p>${comment.text}</p>`;
+          bubble.style.height = `${comment.text.split('\n').length * lineHeight + 20}px`;
+        });
+      }
+    });
+  }
+
+  editor.on('create', () => renderComments());
 });

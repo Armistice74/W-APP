@@ -1,7 +1,49 @@
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 20px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
 .editor-container {
   display: flex;
   gap: 20px;
   height: calc(100vh - 40px);
+}
+
+.toolbar {
+  background-color: #3a3a3a;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.toolbar button {
+  background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background-color: #357abd;
+}
+
+.toolbar button.active {
+  background-color: #2a5d99;
+}
+
+.toolbar select {
+  background-color: #4a4a4a;
+  color: #e0e0e0;
+  border: 1px solid #5a5a5a;
+  padding: 5px;
+  border-radius: 3px;
 }
 
 .editor {
