@@ -1,7 +1,7 @@
 body {
   font-family: 'Arial', sans-serif;
   margin: 20px;
-  background-color: #1a2a3a; /* Dark blue-scale */
+  background-color: #e6f0fa; /* Very light blue */
   color: #000000; /* Black text */
   line-height: 1.6;
 }
@@ -18,7 +18,7 @@ body {
 
 #project-owner {
   font-size: 18px;
-  color: #b0c0d0; /* Light blue-scale */
+  color: #6a8296; /* Muted blue */
   margin: 5px 0 0 0;
 }
 
@@ -30,7 +30,7 @@ body {
 
 .editor {
   width: 66.66%;
-  background-color: #2a3a4a; /* Medium blue-scale */
+  background-color: #d0e0f0; /* Light blue */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -40,7 +40,7 @@ body {
 
 .comments {
   width: 33.33%;
-  background-color: #3a4a5a; /* Lighter blue-scale */
+  background-color: #d0e0f0; /* Light blue */
   border-radius: 10px;
   padding: 15px;
   overflow-y: auto;
@@ -49,7 +49,7 @@ body {
 
 #tool-bubble {
   position: absolute;
-  background-color: #3a4a5a; /* Blue-scale */
+  background-color: #b0c8e0; /* Medium light blue */
   border-radius: 5px;
   padding: 5px;
   z-index: 10;
@@ -71,7 +71,7 @@ body {
 }
 
 .speech-bubble {
-  background-color: #2a3a4a; /* Blue-scale */
+  background-color: #b0c8e0; /* Medium light blue */
   border-radius: 5px;
   padding: 10px;
   width: 80%;
@@ -85,7 +85,7 @@ body {
 
 .speech-bubble textarea {
   width: 100%;
-  background-color: #4a5a6a; /* Light blue-scale */
+  background-color: #d0e0f0; /* Light blue */
   color: #000000; /* Black text */
   border: none;
   border-radius: 3px;
@@ -116,13 +116,13 @@ body {
 }
 
 .show-more {
-  color: #b0c0d0; /* Light blue-scale */
+  color: #6a8296; /* Muted blue */
   cursor: pointer;
   margin-left: 5px;
 }
 
 .show-more:hover {
-  color: #d0e0f0; /* Lighter blue-scale */
+  color: #4a90e2; /* Brighter blue */
 }
 
 .comment {
@@ -132,13 +132,17 @@ body {
 }
 
 .comment.posted {
-  background-color: #b0c8e0; /* Slightly darker light blue for posted comments */
+  background-color: #b0c8e0; /* Medium light blue for posted comments */
 }
 
 .suggestion {
   background-color: #d0e0f0; /* Light blue for active suggestions */
   padding: 2px 5px;
   border-radius: 3px;
+}
+
+.suggestion.posted {
+  background-color: #b0c8e0; /* Medium light blue for posted suggestions */
 }
 
 .suggestion-text {
@@ -148,20 +152,21 @@ body {
 
 .suggestion-bubble {
   position: absolute;
-  background-color: #2a3a4a; /* Blue-scale */
+  background-color: #b0c8e0; /* Medium light blue */
   border-radius: 5px;
-  padding: 10px;
+  padding: 5px;
   z-index: 20;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .suggestion-bubble textarea {
   width: 100%;
-  background-color: #4a5a6a; /* Light blue-scale */
+  background-color: #d0e0f0; /* Light blue */
   color: #000000; /* Black text */
   border: none;
   border-radius: 3px;
   resize: none;
+  padding: 2px;
 }
 
 .suggestion-bubble .confirm-btn {
@@ -206,7 +211,7 @@ body {
 }
 
 .popup-content {
-  background-color: #3a4a5a; /* Blue-scale */
+  background-color: #b0c8e0; /* Medium light blue */
   padding: 20px;
   border-radius: 5px;
   text-align: center;
@@ -214,7 +219,7 @@ body {
 
 .popup-content p {
   margin: 0 0 15px 0;
-  color: #d0e0f0; /* Light blue-scale */
+  color: #000000; /* Black text */
 }
 
 .popup-content button {

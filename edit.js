@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHTML({ mark }) {
       const comment = comments.find(c => c.id === mark.attrs.id && c.isSuggestion);
       if (comment && comment.text) {
-        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion' }, 
+        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion posted' }, 
           `<s>${comment.originalText || ''}</s> <span class="suggestion-text">${mark.attrs.text || ''}</span>`
         ];
       }
@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     comments.push({ id: commentId, text: '', originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-    renderSuggestionBubble(from, to, commentId);
+    renderSuggestionBubble(commentId, from, to);
   }
 
   function adjustBubbleSize(bubble, textarea) {
@@ -201,13 +201,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function postSuggestion(id) {
     const comment = comments.find(c => c.id === id);
     if (comment && comment.isTyping) {
+      const bubble = document.getElementById(`suggestion-bubble-${id}`);
+      const newText = bubble.querySelector('textarea').value;
+      comment.text = newText;
       comment.isTyping = false;
-      comment.timestamp = new Date().toLocaleString(); // Fixed typo: 'New' to 'new'
+      comment.timestamp = new Date().toLocaleString();
       editor.chain().setMark('suggestion', { id: comment.id, text: comment.text }).run();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted suggestion:", { id: comment.id, text: comment.text });
-      document.getElementById(`suggestion-bubble-${id}`)?.remove();
+      bubble.remove();
       editor.view.dispatch(editor.state.tr);
     }
   }
@@ -276,16 +279,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderSuggestionBubble(from, to, commentId) {
+  function renderSuggestionBubble(commentId, from, to) {
     const rect = editor.view.coordsAtPos(from);
     const bubble = document.createElement('div');
     bubble.id = `suggestion-bubble-${commentId}`;
     bubble.className = 'suggestion-bubble';
-    bubble.style.left = `${rect.left + window.scrollX}px`;
-    bubble.style.top = `${rect.top + window.scrollY}px`;
-    bubble.style.width = `${editor.view.coordsAtPos(to).left - rect.left}px`;
+    bubble.style.left = `${rect.left + window.scrollX - 5}px`; // Slight offset for padding
+    bubble.style.top = `${rect.top + window.scrollY - 5}px`;
+    bubble.style.width = `${editor.view.coordsAtPos(to).left - rect.left + 10}px`; // Extra width for padding
+    bubble.style.height = `${rect.bottom - rect.top + 10}px`; // Match text height
     bubble.innerHTML = `
-      <textarea placeholder="Type your suggestion..."></textarea>
+      <textarea placeholder="Edit suggestion...">${editor.state.doc.textBetween(from, to)}</textarea>
       <button class="confirm-btn">Confirm</button>
     `;
     document.body.appendChild(bubble);
@@ -295,7 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
     textarea.oninput = () => {
       const comment = comments.find(c => c.id === commentId);
       comment.text = textarea.value;
-      adjustBubbleSize(bubble, textarea);
     };
     confirmBtn.onclick = () => {
       console.log("Confirm clicked for suggestion:", commentId);
