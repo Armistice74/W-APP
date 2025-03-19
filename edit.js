@@ -28,33 +28,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const { Editor, Mark, Node } = window.TiptapBundle;
 
-  const Comment = Node.create({
+  const Comment = Mark.create({
     name: 'comment',
-    group: 'inline',
-    inline: true,
-    content: 'text*', // Allow text content
     addAttributes() {
-      return { 
-        id: { default: null }, 
-        posted: { default: false }
-      };
+      return { id: { default: null }, posted: { default: false } };
     },
     parseHTML() {
-      return [{ 
-        tag: 'span[data-comment-id]', 
-        getAttrs: dom => ({ 
-          id: dom.getAttribute('data-comment-id'), 
-          posted: dom.getAttribute('data-comment-posted') === 'true'
-        }) 
-      }];
+      return [{ tag: 'span[data-comment-id]', getAttrs: dom => ({ 
+        id: dom.getAttribute('data-comment-id'), 
+        posted: dom.getAttribute('data-comment-posted') === 'true' 
+      }) }];
     },
-    renderHTML({ node }) {
-      console.log("Rendering comment node:", { id: node.attrs.id, posted: node.attrs.posted });
+    renderHTML({ mark }) {
+      console.log("Rendering comment mark:", { id: mark.attrs.id, posted: mark.attrs.posted });
       return ['span', { 
-        'data-comment-id': node.attrs.id, 
-        'data-comment-posted': node.attrs.posted ? 'true' : 'false', 
-        class: 'comment' + (node.attrs.posted ? ' posted' : '')
-      }, 0]; // Render child text
+        'data-comment-id': mark.attrs.id, 
+        'data-comment-posted': mark.attrs.posted ? 'true' : 'false', 
+        class: 'comment' + (mark.attrs.posted ? ' posted' : '')
+      }, 0];
     }
   });
 
@@ -94,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const Document = Node.create({
     name: 'doc',
     topNode: true,
-    content: 'block+'
+    content: 'text*'
   });
 
   const Text = Node.create({
@@ -112,14 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentEdit.comments) {
         currentEdit.comments.forEach(comment => {
           if (!comment.isSuggestion && comment.timestamp) {
-            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).command(({ tr }) => {
-              tr.replaceRangeWith(
-                comment.range.from,
-                comment.range.to,
-                editor.schema.nodes.comment.create({ id: comment.id, posted: true }, editor.state.doc.cut(comment.range.from, comment.range.to))
-              );
-              return true;
-            }).run();
+            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
           } else if (comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
           }
@@ -230,18 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
     const adjustedTo = adjustedFrom + text.length;
     console.log("Adding comment:", { id: commentId, from, to, text, adjustedFrom, adjustedTo });
-    editor.chain()
-      .setTextSelection({ from: adjustedFrom, to: adjustedTo })
-      .command(({ tr, dispatch }) => {
-        if (dispatch) {
-          const content = editor.state.doc.cut(adjustedFrom, adjustedTo);
-          tr.replaceSelectionWith(
-            editor.schema.nodes.comment.create({ id: commentId, posted: false }, content)
-          );
-        }
-        return true;
-      })
-      .run();
+    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId, posted: false }).run();
     comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
@@ -270,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
       console.log("Posting comment, pre-DOM:", editor.view.dom.innerHTML);
-      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).updateAttributes('comment', { posted: true }).run();
+      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
       console.log("Posted comment, mark updated:", { id: comment.id, range: comment.range });
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
