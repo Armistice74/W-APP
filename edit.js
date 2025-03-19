@@ -32,12 +32,11 @@ document.addEventListener("DOMContentLoaded", () => {
     name: 'comment',
     group: 'inline',
     inline: true,
-    atom: true,
+    content: 'text*', // Allow text content
     addAttributes() {
       return { 
         id: { default: null }, 
-        posted: { default: false }, 
-        text: { default: '' }
+        posted: { default: false }
       };
     },
     parseHTML() {
@@ -45,8 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tag: 'span[data-comment-id]', 
         getAttrs: dom => ({ 
           id: dom.getAttribute('data-comment-id'), 
-          posted: dom.getAttribute('data-comment-posted') === 'true', 
-          text: dom.textContent 
+          posted: dom.getAttribute('data-comment-posted') === 'true'
         }) 
       }];
     },
@@ -56,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'data-comment-id': node.attrs.id, 
         'data-comment-posted': node.attrs.posted ? 'true' : 'false', 
         class: 'comment' + (node.attrs.posted ? ' posted' : '')
-      }, node.attrs.text];
+      }, 0]; // 0 = render child content (text)
     }
   });
 
@@ -116,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).insertContent({
               type: 'comment',
-              attrs: { id: comment.id, posted: true, text: editor.state.doc.textBetween(comment.range.from, comment.range.to) }
+              attrs: { id: comment.id, posted: true }
             }).run();
           } else if (comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
@@ -228,10 +226,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
     const adjustedTo = adjustedFrom + text.length;
     console.log("Adding comment:", { id: commentId, from, to, text, adjustedFrom, adjustedTo });
-    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).insertContent({
-      type: 'comment',
-      attrs: { id: commentId, posted: false, text }
-    }).run();
+    editor.chain()
+      .setTextSelection({ from: adjustedFrom, to: adjustedTo })
+      .command(({ tr, dispatch }) => {
+        if (dispatch) {
+          const content = editor.state.doc.cut(adjustedFrom, adjustedTo);
+          tr.replaceSelectionWith(
+            editor.schema.nodes.comment.create({ id: commentId, posted: false }, content)
+          );
+        }
+        return true;
+      })
+      .run();
     comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
