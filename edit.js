@@ -210,9 +210,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const commentId = Date.now().toString();
-    console.log("Adding comment:", { id: commentId, from, to });
-    editor.chain().setTextSelection({ from, to }).setMark('comment', { id: commentId, posted: false }).run();
-    comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
+    const text = editor.state.doc.textBetween(from, to).trim();
+    const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
+    const adjustedTo = adjustedFrom + text.length; // Exact text bounds
+    console.log("Adding comment:", { id: commentId, from: adjustedFrom, to: adjustedTo, text });
+    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId, posted: false }).run();
+    comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     activeCommentId = commentId;
@@ -239,7 +242,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (comment && comment.isTyping) {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
+      const text = editor.state.doc.textBetween(comment.range.from, comment.range.to).trim();
+      const adjustedFrom = comment.range.from + (editor.state.doc.textBetween(comment.range.from, comment.range.to).length - text.length) / 2;
+      const adjustedTo = adjustedFrom + text.length; // Re-trim on confirm
+      console.log("Posting comment, pre-DOM:", editor.view.dom.innerHTML);
+      editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: comment.id, posted: true }).run();
+      comment.range = { from: adjustedFrom, to: adjustedTo }; // Update stored range
       console.log("Posted comment, mark updated:", { id: comment.id, range: comment.range });
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));

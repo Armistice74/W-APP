@@ -186,7 +186,7 @@ input:checked + .slider:before {
 }
 
 .comment.posted {
-  background-color: #7088c0; /* Medium blue, swapped */
+  background-color: #7088c0; /* Medium blue */
   position: relative;
   z-index: 1; /* Bring to front */
 }
@@ -200,7 +200,7 @@ input:checked + .slider:before {
 }
 
 .suggestion.posted {
-  background-color: #40c0ff; /* Bright blue, swapped */
+  background-color: #40c0ff; /* Bright blue */
   position: relative;
   z-index: 1; /* Bring to front */
 }
