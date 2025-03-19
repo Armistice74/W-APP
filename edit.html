@@ -7,35 +7,10 @@
   <script src="/tiptap/tiptap-bundle.js"></script>
 </head>
 <body>
-  <h1>Editing: <span id="editTitle"></span></h1>
-  <p>Editing Type: <span id="editTypeDisplay"></span></p>
-  <p>Time Left: <span id="editTimer">5:00</span></p>
-
-  <div class="toolbar">
-    <button id="boldBtn">B</button>
-    <button id="italicBtn">I</button>
-    <button id="underlineBtn">U</button>
-    <button id="strikeBtn">S</button>
-    <select id="fontSizeSelect">
-      <option value="">Size</option>
-      <option value="12px">Small</option>
-      <option value="16px">Normal</option>
-      <option value="20px">Large</option>
-    </select>
-    <button id="bulletListBtn">• List</button>
-    <button id="orderedListBtn">1. List</button>
-    <button id="undoBtn">Undo</button>
-    <button id="redoBtn">Redo</button>
-    <button id="commentBtn">Comment</button>
+  <div class="editor-container">
+    <div id="editor" class="editor"></div>
+    <div id="comments" class="comments"></div>
   </div>
-
-  <div id="editor" class="editor"></div>
-  <div id="comments-sidebar" class="comments-sidebar"></div>
-  <div id="wordCount">Words: 0 | Characters: 0</div>
-
-  <button id="submitEdit">Submit Edits</button>
-  <button id="cancelEdit">Cancel</button>
-
   <script src="edit.js"></script>
 </body>
 </html>

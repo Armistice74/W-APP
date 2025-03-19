@@ -1,16 +1,7 @@
-function initEditor() {
-  if (!window.TiptapBundle) {
-    console.log("Waiting for TipTapBundle...");
-    setTimeout(initEditor, 100);
-    return;
-  }
-  console.log("DOM loaded, initializing TipTap 2.11.5");
-  console.log("window.TiptapBundle:", window.TiptapBundle);
-
+document.addEventListener("DOMContentLoaded", () => {
   const currentEditRaw = sessionStorage.getItem("currentEdit");
   if (!currentEditRaw) {
     console.error("No edit data found in sessionStorage");
-    alert("No edit data found!");
     window.location.href = "index.html";
     return;
   }
@@ -18,229 +9,113 @@ function initEditor() {
   let currentEdit;
   try {
     currentEdit = JSON.parse(currentEditRaw);
-    console.log("Loaded currentEdit:", currentEdit);
   } catch (e) {
     console.error("Failed to parse currentEdit:", e);
-    alert("Invalid edit data!");
     window.location.href = "index.html";
     return;
   }
 
-  const titleElement = document.getElementById("editTitle");
-  const typeElement = document.getElementById("editTypeDisplay");
-  const editorElement = document.getElementById("editor");
-  if (!titleElement || !typeElement || !editorElement) {
-    console.error("Missing required DOM elements");
-    alert("Page setup error!");
-    return;
-  }
-  titleElement.textContent = currentEdit.title;
-  typeElement.textContent = currentEdit.editType;
+  const { Editor, Mark } = window.TiptapBundle;
 
-  const { Editor } = window.TiptapBundle;
-  const StarterKit = window.TiptapBundle.StarterKit;
+  const Comment = Mark.create({
+    name: 'comment',
+    addAttributes() {
+      return { id: { default: null } };
+    },
+    parseHTML() {
+      return [{ tag: 'span[data-comment-id]', getAttrs: dom => ({ id: dom.getAttribute('data-comment-id') }) }];
+    },
+    renderHTML({ mark }) {
+      return ['span', { 'data-comment-id': mark.attrs.id, class: 'comment' }, 0];
+    }
+  });
 
   const editor = new Editor({
-    element: editorElement,
-    extensions: [
-      StarterKit.configure({
-        bulletList: { keepMarks: true },
-        orderedList: { keepMarks: true }
-      })
-    ],
+    element: document.getElementById("editor"),
+    extensions: [Comment],
     content: currentEdit.text || "<p>Start editing...</p>",
+    onCreate: () => console.log("TipTap editor initialized"),
     onUpdate: ({ editor }) => {
-      updateWordCount(editor);
       currentEdit.text = editor.getHTML();
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     },
-    onCreate: () => console.log("TipTap editor 2.11.5 initialized")
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      if (from !== to) showToolBubble(from, to);
+      else hideToolBubble();
+    }
   });
 
   let comments = currentEdit.comments || [];
-  renderComments();
 
-  let timeLeft = 300;
-  let editTimer = null;
-  startEditTimer();
-
-  document.getElementById("boldBtn").addEventListener("click", () => editor.chain().focus().toggleBold().run());
-  document.getElementById("italicBtn").addEventListener("click", () => editor.chain().focus().toggleItalic().run());
-  document.getElementById("underlineBtn").addEventListener("click", () => editor.chain().focus().toggleUnderline().run());
-  document.getElementById("strikeBtn").addEventListener("click", () => editor.chain().focus().toggleStrike().run());
-  document.getElementById("fontSizeSelect").addEventListener("change", (e) => editor.chain().focus().setFontSize(e.target.value).run());
-  document.getElementById("bulletListBtn").addEventListener("click", () => editor.chain().focus().toggleBulletList().run());
-  document.getElementById("orderedListBtn").addEventListener("click", () => editor.chain().focus().toggleOrderedList().run());
-  document.getElementById("undoBtn").addEventListener("click", () => editor.chain().focus().undo().run());
-  document.getElementById("redoBtn").addEventListener("click", () => editor.chain().focus().redo().run());
-  document.getElementById("commentBtn").addEventListener("click", addComment);
-  document.getElementById("submitEdit").addEventListener("click", submitEdit);
-  document.getElementById("cancelEdit").addEventListener("click", cancelEdit);
-
-  function submitEdit() {
-    console.log("Submitting edit for:", currentEdit.title);
-    clearInterval(editTimer);
-    const editedSample = editor.getHTML();
-    const popularityScore = parseInt(prompt(`Assign a popularity score for "${currentEdit.title}" (0-10):`), 10);
-    let rating = isNaN(popularityScore) || popularityScore < 0 || popularityScore > 10 ? 0 : popularityScore;
-
-    const users = JSON.parse(localStorage.getItem("users")) || {};
-    const sharedProjects = JSON.parse(localStorage.getItem("sharedProjects")) || [];
-    const currentUser = localStorage.getItem("currentUser");
-
-    if (!currentUser || !sharedProjects[currentEdit.index]) {
-      console.error("Missing user or project data");
-      alert("Submission failed!");
-      return;
+  function showToolBubble(from, to) {
+    let bubble = document.getElementById('tool-bubble');
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.id = 'tool-bubble';
+      bubble.innerHTML = '<button id="comment-btn">Comment</button>';
+      document.body.appendChild(bubble);
+      document.getElementById('comment-btn').addEventListener('click', () => addComment(from, to));
     }
-
-    const edit = {
-      title: currentEdit.title,
-      summary: currentEdit.summary,
-      text: currentEdit.text,
-      editType: currentEdit.editType,
-      editedSample,
-      editor: currentUser,
-      ratingTotal: rating,
-      ratingCount: 1,
-      comments
-    };
-
-    users[currentUser].editedProjects = users[currentUser].editedProjects || [];
-    users[currentUser].editedProjects = users[currentUser].editedProjects.map(e =>
-      e.index === currentEdit.index && e.status === "pending" ? edit : e
-    );
-    sharedProjects[currentEdit.index].edits.push(edit);
-    sharedProjects[currentEdit.index].ratingTotal += rating;
-    sharedProjects[currentEdit.index].ratingCount = (sharedProjects[currentEdit.index].ratingCount || 0) + 1;
-
-    if (sharedProjects[currentEdit.index].takenBy.length === sharedProjects[currentEdit.index].maxTakers) {
-      sharedProjects[currentEdit.index].status = "done";
-      sendMessage(users, sharedProjects[currentEdit.index].owner, `All edits for "${currentEdit.title}" are complete. Project marked as done.`);
-    }
-    sendMessage(users, sharedProjects[currentEdit.index].owner, `Editor ${currentUser} completed an edit for "${currentEdit.title}".`, sharedProjects[currentEdit.index].edits.length - 1);
-
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("sharedProjects", JSON.stringify(sharedProjects));
-    sessionStorage.removeItem("currentEdit");
-    alert(`Editing "${currentEdit.title}" complete! Popularity Score: ${rating}`);
-    console.log("Redirecting to my projects");
-    window.location.href = "index.html#myProjects";
+    const rect = editor.view.coordsAtPos(from);
+    bubble.style.left = `${rect.left + window.scrollX}px`;
+    bubble.style.top = `${rect.top + window.scrollY - 40}px`;
+    bubble.style.display = 'block';
   }
 
-  function cancelEdit() {
-    console.log("Canceling edit");
-    clearInterval(editTimer);
-    const users = JSON.parse(localStorage.getItem("users")) || {};
-    const sharedProjects = JSON.parse(localStorage.getItem("sharedProjects")) || [];
-    const currentUser = localStorage.getItem("currentUser");
-
-    sharedProjects[currentEdit.index].takenBy = sharedProjects[currentEdit.index].takenBy.filter(u => u !== currentUser);
-    users[currentUser].points += 5;
-    sendMessage(users, currentUser, `You canceled editing "${currentEdit.title}". Take returned to pool.`);
-
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("sharedProjects", JSON.stringify(sharedProjects));
-    sessionStorage.removeItem("currentEdit");
-    window.location.href = "index.html#myProjects";
+  function hideToolBubble() {
+    const bubble = document.getElementById('tool-bubble');
+    if (bubble) bubble.style.display = 'none';
   }
 
-  function addComment() {
-    const selection = editor.state.selection;
-    if (selection.empty) {
-      alert("Please select text to comment on!");
-      return;
-    }
-    const commentText = prompt("Enter your comment:");
-    if (commentText) {
-      const commentId = Date.now().toString();
-      editor.chain().focus().setMark('comment', { id: commentId }).run();
-      comments.push({
-        id: commentId,
-        text: commentText,
-        range: { from: selection.from, to: selection.to },
-        user: localStorage.getItem("currentUser"),
-        timestamp: new Date().toLocaleString()
-      });
-      currentEdit.comments = comments;
-      sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-      renderComments();
-    }
-  }
-
-  function startEditTimer() {
-    document.getElementById("editTimer").textContent = formatTime(timeLeft);
-    editTimer = setInterval(() => {
-      timeLeft--;
-      document.getElementById("editTimer").textContent = formatTime(timeLeft);
-      if (timeLeft <= 0) {
-        clearInterval(editTimer);
-        expireEdit();
-      }
-    }, 1000);
-  }
-
-  function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
-    const secs = (seconds % 60).toString().padStart(2, "0");
-    return `${mins}:${secs}`;
-  }
-
-  function expireEdit() {
-    console.log("Edit time expired");
-    const users = JSON.parse(localStorage.getItem("users")) || {};
-    const sharedProjects = JSON.parse(localStorage.getItem("sharedProjects")) || [];
-    const currentUser = localStorage.getItem("currentUser");
-
-    sharedProjects[currentEdit.index].takenBy = sharedProjects[currentEdit.index].takenBy.filter(u => u !== currentUser);
-    users[currentUser].points += 5;
-    users[currentUser].expiredProjects = users[currentUser].expiredProjects || [];
-    users[currentUser].expiredProjects.push(currentEdit.title);
-    sendMessage(users, currentUser, `Your edit time for "${currentEdit.title}" expired. Take returned to pool.`);
-    sendMessage(users, sharedProjects[currentEdit.index].owner, `Editor ${currentUser} failed to edit "${currentEdit.title}" in time. Takers left: ${sharedProjects[currentEdit.index].maxTakers - sharedProjects[currentEdit.index].takenBy.length}`);
-
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("sharedProjects", JSON.stringify(sharedProjects));
-    sessionStorage.removeItem("currentEdit");
-
-    editor.setEditable(false);
-    document.getElementById("submitEdit").style.display = "none";
-    document.getElementById("cancelEdit").style.display = "none";
-    const expiryMessage = document.createElement("div");
-    expiryMessage.id = "expiryMessage";
-    expiryMessage.innerHTML = `
-      <p>Edit time has expired!</p>
-      <button onclick="window.location.href='index.html#myProjects'">Return to My Projects</button>
+  function addComment(from, to) {
+    const commentId = Date.now().toString();
+    editor.chain().setMark('comment', { id: commentId }).run();
+    const commentWindow = document.getElementById('comments');
+    const speechBubble = document.createElement('div');
+    speechBubble.className = 'speech-bubble';
+    speechBubble.innerHTML = `
+      <textarea placeholder="Enter comment..."></textarea>
+      <button class="confirm-btn">Confirm</button>
     `;
-    document.body.appendChild(expiryMessage);
+    commentWindow.appendChild(speechBubble);
+
+    const rect = editor.view.coordsAtPos(from);
+    speechBubble.style.top = `${rect.top - commentWindow.offsetTop}px`;
+
+    const textarea = speechBubble.querySelector('textarea');
+    textarea.addEventListener('input', () => adjustBubbleSize(speechBubble, textarea));
+    speechBubble.querySelector('.confirm-btn').addEventListener('click', () => postComment(commentId, from, to, textarea.value, speechBubble));
   }
 
-  function sendMessage(users, username, message, editIndex = null) {
-    users[username].inbox = users[username].inbox || [];
-    users[username].inbox.push({ date: new Date().toLocaleString(), message, editIndex });
+  function adjustBubbleSize(bubble, textarea) {
+    bubble.style.height = 'auto';
+    const nextBubble = bubble.nextElementSibling;
+    const maxHeight = nextBubble ? nextBubble.offsetTop - bubble.offsetTop - 10 : Infinity;
+    bubble.style.height = `${Math.min(textarea.scrollHeight + 40, maxHeight)}px`;
   }
 
-  function updateWordCount(editor) {
-    const text = editor.getText();
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-    const chars = text.length;
-    document.getElementById("wordCount").textContent = `Words: ${words} | Characters: ${chars}`;
-  }
+  function postComment(id, from, to, text, bubble) {
+    comments.push({ id, text, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: new Date().toLocaleString() });
+    currentEdit.comments = comments;
+    sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
 
-  function renderComments() {
-    const sidebar = document.getElementById("comments-sidebar");
-    sidebar.innerHTML = "<h3>Comments</h3>";
-    comments.forEach(comment => {
-      const commentDiv = document.createElement("div");
-      commentDiv.className = "comment-item";
-      commentDiv.innerHTML = `
-        <p><strong>${comment.user}</strong> (${comment.timestamp})</p>
-        <p>${comment.text}</p>
-        <small>Range: ${comment.range.from}-${comment.range.to}</small>
-      `;
-      sidebar.appendChild(commentDiv);
-    });
-  }
-}
+    const maxLines = 3;
+    const lineHeight = 20; // Approx px per line
+    const truncated = text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
+    bubble.innerHTML = `
+      <p>${truncated}</p>
+      ${text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
+    `;
+    bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
+    bubble.classList.add('posted');
 
-document.addEventListener("DOMContentLoaded", initEditor);
+    const showMore = bubble.querySelector('.show-more');
+    if (showMore) {
+      showMore.addEventListener('click', () => {
+        bubble.innerHTML = `<p>${text}</p>`;
+        bubble.style.height = `${text.split('\n').length * lineHeight + 20}px`;
+      });
+    }
+  }
+});
