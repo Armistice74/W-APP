@@ -181,10 +181,14 @@ input:checked + .slider:before {
   background-color: #90a0d0;
   padding: 2px 5px;
   border-radius: 3px;
+  position: relative;
+  z-index: 1; /* Bring to front */
 }
 
 .comment.posted {
-  background-color: #405060; /* Slightly darker for visibility */
+  background-color: #405060; /* Distinct posted color */
+  position: relative;
+  z-index: 1; /* Bring to front */
 }
 
 .suggestion {
