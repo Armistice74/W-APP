@@ -7,9 +7,17 @@
   <script src="/tiptap/tiptap-bundle.js"></script>
 </head>
 <body>
+  <h1 id="project-title"></h1>
   <div class="editor-container">
     <div id="editor" class="editor"></div>
     <div id="comments" class="comments"></div>
+  </div>
+  <button id="submit-edits">Submit Edits</button>
+  <div id="submit-confirm" class="popup" style="display: none;">
+    <div class="popup-content">
+      <p>Are you sure you're done editing?</p>
+      <button id="confirm-submit">Yep!</button>
+    </div>
   </div>
   <script src="edit.js"></script>
 </body>

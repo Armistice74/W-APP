@@ -23,6 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
     : "<p>Start editing...</p>";
   console.log("Initial content set to:", initialContent);
 
+  // Set project title and owner
+  document.getElementById("project-title").textContent = `${currentEdit.title} by ${currentEdit.user}`;
+
   const { Editor, Mark, Node } = window.TiptapBundle;
 
   const Comment = Mark.create({
@@ -70,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let comments = currentEdit.comments || [];
 
-  // Click handler for highlights
   document.getElementById("editor").addEventListener('click', (e) => {
     const span = e.target.closest('span[data-comment-id]');
     if (span) {
@@ -78,6 +80,24 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Clicked highlight:", commentId);
       highlightCommentBubble(commentId);
     }
+  });
+
+  // Submit Edits button
+  document.getElementById("submit-edits").addEventListener('click', () => {
+    document.getElementById("submit-confirm").style.display = 'block';
+  });
+
+  document.getElementById("confirm-submit").addEventListener('click', () => {
+    console.log("Submitting edits:", currentEdit);
+    const projects = JSON.parse(localStorage.getItem("projects") || "[]");
+    const projectIndex = projects.findIndex(p => p.id === currentEdit.id);
+    if (projectIndex !== -1) {
+      projects[projectIndex].editedSample = editor.getHTML();
+      projects[projectIndex].comments = comments.filter(c => !c.isTyping); // Only save posted comments
+      localStorage.setItem("projects", JSON.stringify(projects));
+    }
+    sessionStorage.removeItem("currentEdit");
+    window.location.href = "index.html#my-edits";
   });
 
   function showToolBubble(from, to) {
@@ -130,16 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
       renderComments();
-      editor.view.dispatch(editor.state.tr); // Update highlights
+      editor.view.dispatch(editor.state.tr);
     }
   }
 
   function highlightCommentBubble(commentId) {
-    // Remove existing highlights
     document.querySelectorAll('.speech-bubble.highlighted').forEach(bubble => {
       bubble.classList.remove('highlighted');
     });
-    // Add highlight to matching bubble
     const bubble = document.querySelector(`.speech-bubble[data-comment-id="${commentId}"]`);
     if (bubble) {
       bubble.classList.add('highlighted');
