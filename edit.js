@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentEdit;
   try {
     currentEdit = JSON.parse(currentEditRaw);
+    console.log("Loaded currentEdit:", currentEdit); // Debug: Check data
   } catch (e) {
     console.error("Failed to parse currentEdit:", e);
     window.location.href = "index.html";
@@ -33,8 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const editor = new Editor({
     element: document.getElementById("editor"),
     extensions: [Comment],
-    content: currentEdit.text || "<p>Start editing...</p>",
-    onCreate: () => console.log("TipTap editor initialized"),
+    content: currentEdit.text ? currentEdit.text : "<p>Start editing...</p>", // Ensure text or fallback
+    onCreate: ({ editor }) => {
+      console.log("TipTap editor initialized");
+      console.log("Editor content set to:", editor.getHTML()); // Debug: Verify content
+    },
     onUpdate: ({ editor }) => {
       currentEdit.text = editor.getHTML();
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
@@ -61,9 +65,8 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.top = `${rect.top + window.scrollY - 40}px`;
     bubble.style.display = 'block';
 
-    // Ensure the button listener is added only once or re-added correctly
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = null; // Clear any old listeners
+    commentBtn.onclick = null; // Clear old listeners
     commentBtn.addEventListener('click', () => addComment(from, to));
   }
 
