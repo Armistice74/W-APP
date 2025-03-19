@@ -41,6 +41,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  const Suggestion = Mark.create({
+    name: 'suggestion',
+    addAttributes() {
+      return { id: { default: null }, text: { default: '' } };
+    },
+    parseHTML() {
+      return [{ tag: 'span[data-suggestion-id]', getAttrs: dom => ({ id: dom.getAttribute('data-suggestion-id'), text: dom.getAttribute('data-suggestion-text') }) }];
+    },
+    renderHTML({ mark }) {
+      const comment = comments.find(c => c.id === mark.attrs.id && c.isSuggestion);
+      if (comment) {
+        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion' }, [
+          's', {}, comment.originalText || '', // Strikethrough original
+          'span', { class: 'suggestion-text' }, mark.attrs.text || '' // New text
+        ]];
+      }
+      return ['span', { 'data-suggestion-id': mark.attrs.id, class: 'suggestion' }, 0];
+    }
+  });
+
   const Document = Node.create({
     name: 'doc',
     topNode: true,
@@ -53,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const editor = new Editor({
     element: document.getElementById("editor"),
-    extensions: [Document, Text, Comment],
+    extensions: [Document, Text, Comment, Suggestion],
     content: initialContent,
     onCreate: ({ editor }) => {
       console.log("TipTap editor initialized");
@@ -74,9 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let comments = currentEdit.comments || [];
 
   document.getElementById("editor").addEventListener('click', (e) => {
-    const span = e.target.closest('span[data-comment-id]');
+    const span = e.target.closest('span[data-comment-id], span[data-suggestion-id]');
     if (span) {
-      const commentId = span.dataset.commentId;
+      const commentId = span.dataset.commentId || span.dataset.suggestionId;
       console.log("Clicked highlight:", commentId);
       highlightCommentBubble(commentId);
     }
@@ -118,12 +138,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentBtn = document.getElementById("tool-comment-btn");
     commentBtn.onclick = () => {
       addComment(from, to);
-      hideToolBubble(); // Hide after click
+      hideToolBubble();
     };
     const suggestionBtn = document.getElementById("tool-suggestion-btn");
     suggestionBtn.onclick = () => {
-      console.log("Suggestion button clicked—no action yet");
-      hideToolBubble(); // Hide for now, no function
+      addSuggestion(from, to);
+      hideToolBubble();
     };
   }
 
@@ -146,6 +166,21 @@ document.addEventListener("DOMContentLoaded", () => {
     renderComments();
   }
 
+  function addSuggestion(from, to) {
+    if (comments.some(c => c.isTyping)) {
+      console.log("Blocked: Already typing a suggestion");
+      return;
+    }
+    const commentId = Date.now().toString();
+    const originalText = editor.state.doc.textBetween(from, to);
+    console.log("Adding suggestion:", { id: commentId, from, to, originalText });
+    editor.chain().setMark('suggestion', { id: commentId, text: '' }).run();
+    comments.push({ id: commentId, text: '', originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
+    currentEdit.comments = comments;
+    sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+    renderSuggestionBubble(from, to, commentId);
+  }
+
   function adjustBubbleSize(bubble, textarea) {
     bubble.style.height = 'auto';
     bubble.style.height = `${textarea.scrollHeight + 40}px`;
@@ -160,6 +195,20 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
       renderComments();
+      editor.view.dispatch(editor.state.tr);
+    }
+  }
+
+  function postSuggestion(id) {
+    const comment = comments.find(c => c.id === id);
+    if (comment && comment.isTyping) {
+      comment.isTyping = false;
+      comment.timestamp = new Date().toLocaleString();
+      editor.chain().setMark('suggestion', { id: comment.id, text: comment.text }).run();
+      currentEdit.comments = comments;
+      sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
+      console.log("Posted suggestion:", { id: comment.id, text: comment.text });
+      document.getElementById(`suggestion-bubble-${id}`)?.remove(); // Remove bubble
       editor.view.dispatch(editor.state.tr);
     }
   }
@@ -183,6 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Rendering stack:", comments.map(c => ({ id: c.id, from: c.range.from, text: c.text.slice(0, 10) + '...', isTyping: c.isTyping })));
 
     comments.forEach(comment => {
+      if (comment.isSuggestion) return; // Suggestions render in editor, not sidebar
       const existing = commentWindow.querySelector(`[data-comment-id="${comment.id}"]`);
       if (existing) return;
 
@@ -202,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
           adjustBubbleSize(bubble, textarea);
         };
         confirmBtn.onclick = () => {
-          console.log("Confirm clicked for:", comment.id);
+          console.log("Confirm clicked for comment:", comment.id);
           postComment(comment.id);
         };
         setTimeout(() => textarea.focus(), 0);
@@ -225,5 +275,33 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       commentWindow.appendChild(bubble);
     });
+  }
+
+  function renderSuggestionBubble(from, to, commentId) {
+    const rect = editor.view.coordsAtPos(from);
+    const bubble = document.createElement('div');
+    bubble.id = `suggestion-bubble-${commentId}`;
+    bubble.className = 'suggestion-bubble';
+    bubble.style.left = `${rect.left + window.scrollX}px`;
+    bubble.style.top = `${rect.top + window.scrollY}px`;
+    bubble.style.width = `${editor.view.coordsAtPos(to).left - rect.left}px`;
+    bubble.innerHTML = `
+      <textarea placeholder="Type your suggestion..."></textarea>
+      <button class="confirm-btn">Confirm</button>
+    `;
+    document.body.appendChild(bubble);
+
+    const textarea = bubble.querySelector('textarea');
+    const confirmBtn = bubble.querySelector('.confirm-btn');
+    textarea.oninput = () => {
+      const comment = comments.find(c => c.id === commentId);
+      comment.text = textarea.value;
+      adjustBubbleSize(bubble, textarea);
+    };
+    confirmBtn.onclick = () => {
+      console.log("Confirm clicked for suggestion:", commentId);
+      postSuggestion(commentId);
+    };
+    setTimeout(() => textarea.focus(), 0);
   }
 });
