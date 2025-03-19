@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'data-comment-id': node.attrs.id, 
         'data-comment-posted': node.attrs.posted ? 'true' : 'false', 
         class: 'comment' + (node.attrs.posted ? ' posted' : '')
-      }, 0]; // 0 = render child content (text)
+      }, 0]; // Render child text
     }
   });
 
@@ -112,9 +112,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentEdit.comments) {
         currentEdit.comments.forEach(comment => {
           if (!comment.isSuggestion && comment.timestamp) {
-            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).insertContent({
-              type: 'comment',
-              attrs: { id: comment.id, posted: true }
+            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).command(({ tr }) => {
+              tr.replaceRangeWith(
+                comment.range.from,
+                comment.range.to,
+                editor.schema.nodes.comment.create({ id: comment.id, posted: true }, editor.state.doc.cut(comment.range.from, comment.range.to))
+              );
+              return true;
             }).run();
           } else if (comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
