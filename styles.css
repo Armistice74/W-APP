@@ -1,7 +1,7 @@
 body {
   font-family: 'Arial', sans-serif;
   margin: 20px;
-  background-color: #e6f0fa; /* Very light blue */
+  background-color: #a6b3c6; /* 20% darker than #d0e0f0 */
   color: #000000; /* Black text */
   line-height: 1.6;
 }
@@ -58,7 +58,7 @@ body {
 }
 
 #tool-bubble button {
-  background-color: #4a90e2;
+  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
   color: #fff;
   border: none;
   padding: 5px 10px;
@@ -67,7 +67,7 @@ body {
 }
 
 #tool-bubble button:hover {
-  background-color: #357abd;
+  background-color: #3a4a5a; /* Slightly lighter for hover */
 }
 
 .speech-bubble {
@@ -93,7 +93,7 @@ body {
 }
 
 .speech-bubble .confirm-btn {
-  background-color: #4a90e2;
+  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
   color: #fff;
   border: none;
   padding: 5px 10px;
@@ -103,7 +103,7 @@ body {
 }
 
 .speech-bubble .confirm-btn:hover {
-  background-color: #357abd;
+  background-color: #3a4a5a;
 }
 
 .speech-bubble p {
@@ -112,7 +112,7 @@ body {
 }
 
 .speech-bubble.highlighted {
-  border: 2px solid #4a90e2;
+  border: 2px solid #4a5a6a; /* Match button color */
 }
 
 .show-more {
@@ -122,7 +122,7 @@ body {
 }
 
 .show-more:hover {
-  color: #4a90e2; /* Brighter blue */
+  color: #4a5a6a; /* Button color */
 }
 
 .comment {
@@ -139,6 +139,7 @@ body {
   background-color: #d0e0f0; /* Light blue for active suggestions */
   padding: 2px 5px;
   border-radius: 3px;
+  position: relative;
 }
 
 .suggestion.posted {
@@ -150,42 +151,27 @@ body {
   color: #000080; /* Dark blue for suggested text */
 }
 
-.suggestion-bubble {
+.suggestion-confirm {
   position: absolute;
-  background-color: #b0c8e0; /* Medium light blue */
-  border-radius: 5px;
-  padding: 5px;
   z-index: 20;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.suggestion-bubble textarea {
-  width: 100%;
-  background-color: #d0e0f0; /* Light blue */
-  color: #000000; /* Black text */
-  border: none;
-  border-radius: 3px;
-  resize: none;
-  padding: 2px;
-}
-
-.suggestion-bubble .confirm-btn {
-  background-color: #4a90e2;
+.suggestion-confirm .confirm-btn {
+  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
   color: #fff;
   border: none;
   padding: 5px 10px;
   border-radius: 3px;
   cursor: pointer;
-  margin-top: 5px;
 }
 
-.suggestion-bubble .confirm-btn:hover {
-  background-color: #357abd;
+.suggestion-confirm .confirm-btn:hover {
+  background-color: #3a4a5a;
 }
 
 #submit-edits {
   margin-top: 20px;
-  background-color: #4a90e2;
+  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -194,7 +180,7 @@ body {
 }
 
 #submit-edits:hover {
-  background-color: #357abd;
+  background-color: #3a4a5a;
 }
 
 .popup {
@@ -223,7 +209,7 @@ body {
 }
 
 .popup-content button {
-  background-color: #4a90e2;
+  background-color: #4a5a6a; /* 65% darker than #d0e0f0 */
   color: #fff;
   border: none;
   padding: 5px 15px;
@@ -232,5 +218,5 @@ body {
 }
 
 .popup-content button:hover {
-  background-color: #357abd;
+  background-color: #3a4a5a;
 }

@@ -174,15 +174,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const originalText = editor.state.doc.textBetween(from, to);
     console.log("Adding suggestion:", { id: commentId, from, to, originalText });
     editor.chain().setMark('suggestion', { id: commentId, text: '' }).run();
-    comments.push({ id: commentId, text: '', originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
+    comments.push({ id: commentId, text: originalText, originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-    renderSuggestionBubble(commentId, from, to);
-  }
-
-  function adjustBubbleSize(bubble, textarea) {
-    bubble.style.height = 'auto';
-    bubble.style.height = `${textarea.scrollHeight + 40}px`;
+    renderSuggestionInline(commentId, from, to);
   }
 
   function postComment(id) {
@@ -201,8 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function postSuggestion(id) {
     const comment = comments.find(c => c.id === id);
     if (comment && comment.isTyping) {
-      const bubble = document.getElementById(`suggestion-bubble-${id}`);
-      const newText = bubble.querySelector('textarea').value;
+      const newText = document.getElementById(`suggestion-input-${id}`).value;
       comment.text = newText;
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
@@ -210,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted suggestion:", { id: comment.id, text: comment.text });
-      bubble.remove();
+      document.getElementById(`suggestion-confirm-${id}`).remove();
       editor.view.dispatch(editor.state.tr);
     }
   }
@@ -279,31 +273,33 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderSuggestionBubble(commentId, from, to) {
-    const rect = editor.view.coordsAtPos(from);
-    const bubble = document.createElement('div');
-    bubble.id = `suggestion-bubble-${commentId}`;
-    bubble.className = 'suggestion-bubble';
-    bubble.style.left = `${rect.left + window.scrollX - 5}px`; // Slight offset for padding
-    bubble.style.top = `${rect.top + window.scrollY - 5}px`;
-    bubble.style.width = `${editor.view.coordsAtPos(to).left - rect.left + 10}px`; // Extra width for padding
-    bubble.style.height = `${rect.bottom - rect.top + 10}px`; // Match text height
-    bubble.innerHTML = `
-      <textarea placeholder="Edit suggestion...">${editor.state.doc.textBetween(from, to)}</textarea>
-      <button class="confirm-btn">Confirm</button>
-    `;
-    document.body.appendChild(bubble);
+  function adjustBubbleSize(bubble, textarea) {
+    bubble.style.height = 'auto';
+    bubble.style.height = `${textarea.scrollHeight + 40}px`;
+  }
 
-    const textarea = bubble.querySelector('textarea');
-    const confirmBtn = bubble.querySelector('.confirm-btn');
-    textarea.oninput = () => {
-      const comment = comments.find(c => c.id === commentId);
-      comment.text = textarea.value;
+  function renderSuggestionInline(commentId, from, to) {
+    const rect = editor.view.coordsAtPos(from);
+    const confirmBtn = document.createElement('div');
+    confirmBtn.id = `suggestion-confirm-${commentId}`;
+    confirmBtn.className = 'suggestion-confirm';
+    confirmBtn.style.left = `${rect.left + window.scrollX}px`;
+    confirmBtn.style.top = `${rect.bottom + window.scrollY + 5}px`; // Below highlight
+    confirmBtn.innerHTML = `<button class="confirm-btn">Confirm</button>`;
+    document.body.appendChild(confirmBtn);
+
+    const comment = comments.find(c => c.id === commentId);
+    const span = editor.view.dom.querySelector(`[data-suggestion-id="${commentId}"]`);
+    span.contentEditable = true;
+    span.focus();
+
+    span.oninput = () => {
+      comment.text = span.textContent;
     };
-    confirmBtn.onclick = () => {
+    confirmBtn.querySelector('.confirm-btn').onclick = () => {
       console.log("Confirm clicked for suggestion:", commentId);
       postSuggestion(commentId);
+      span.contentEditable = false;
     };
-    setTimeout(() => textarea.focus(), 0);
   }
 });
