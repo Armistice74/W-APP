@@ -133,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
     bubble.classList.add('posted');
+    bubble.classList.remove('speech-bubble'); // Clean up typing state
     document.getElementById('comments').scrollTop = bubble.offsetTop;
 
     const showMore = bubble.querySelector('.show-more');
