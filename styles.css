@@ -92,6 +92,10 @@ body {
   word-wrap: break-word;
 }
 
+.speech-bubble.highlighted {
+  border: 2px solid #4a90e2; /* Blue border when highlighted */
+}
+
 .show-more {
   color: #888;
   cursor: pointer;

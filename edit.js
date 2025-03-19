@@ -70,6 +70,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let comments = currentEdit.comments || [];
 
+  // Click handler for highlights
+  document.getElementById("editor").addEventListener('click', (e) => {
+    const span = e.target.closest('span[data-comment-id]');
+    if (span) {
+      const commentId = span.dataset.commentId;
+      console.log("Clicked highlight:", commentId);
+      highlightCommentBubble(commentId);
+    }
+  });
+
   function showToolBubble(from, to) {
     let bubble = document.getElementById('tool-bubble');
     if (!bubble) {
@@ -124,6 +134,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function highlightCommentBubble(commentId) {
+    // Remove existing highlights
+    document.querySelectorAll('.speech-bubble.highlighted').forEach(bubble => {
+      bubble.classList.remove('highlighted');
+    });
+    // Add highlight to matching bubble
+    const bubble = document.querySelector(`.speech-bubble[data-comment-id="${commentId}"]`);
+    if (bubble) {
+      bubble.classList.add('highlighted');
+      console.log("Highlighted bubble:", commentId);
+    }
+  }
+
   function renderComments() {
     const commentWindow = document.getElementById('comments');
     commentWindow.innerHTML = '';
@@ -154,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("Confirm clicked for:", comment.id);
           postComment(comment.id);
         };
-        setTimeout(() => textarea.focus(), 0); // Ensure focus after render
+        setTimeout(() => textarea.focus(), 0);
       } else {
         const maxLines = 3;
         const lineHeight = 20;
