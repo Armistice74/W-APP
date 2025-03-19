@@ -57,7 +57,7 @@ body {
   padding: 10px;
   width: 80%;
   z-index: 5;
-  margin-bottom: 10px; /* Stack spacing */
+  margin-bottom: 10px;
 }
 
 .speech-bubble.posted {
@@ -103,7 +103,11 @@ body {
 }
 
 .comment {
-  background-color: #d1c4a0;
+  background-color: #b8a88a; /* Softer beige for active */
   padding: 2px 5px;
   border-radius: 3px;
+}
+
+.comment.posted {
+  background-color: #9e8e70; /* Even subtler for posted */
 }
