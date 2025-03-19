@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const currentEditRaw = sessionStorage.getItem("currentEdit");
+  console.log("Raw sessionStorage currentEdit:", currentEditRaw);
+
   if (!currentEditRaw) {
     console.error("No edit data found in sessionStorage");
     window.location.href = "index.html";
@@ -9,14 +11,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentEdit;
   try {
     currentEdit = JSON.parse(currentEditRaw);
-    console.log("Loaded currentEdit:", currentEdit); // Debug: Check data
+    console.log("Parsed currentEdit:", currentEdit);
   } catch (e) {
     console.error("Failed to parse currentEdit:", e);
     window.location.href = "index.html";
     return;
   }
 
-  const { Editor, Mark } = window.TiptapBundle;
+  const initialContent = (currentEdit.text && typeof currentEdit.text === 'string' && currentEdit.text.trim() !== '')
+    ? currentEdit.text
+    : "<p>Start editing...</p>";
+  console.log("Initial content set to:", initialContent);
+
+  const { Editor, Mark, Node } = window.TiptapBundle;
 
   const Comment = Mark.create({
     name: 'comment',
@@ -31,13 +38,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  const Document = Node.create({
+    name: 'doc',
+    topNode: true,
+    content: 'text*'
+  });
+
+  const Text = Node.create({
+    name: 'text'
+  });
+
   const editor = new Editor({
     element: document.getElementById("editor"),
-    extensions: [Comment],
-    content: currentEdit.text ? currentEdit.text : "<p>Start editing...</p>", // Ensure text or fallback
+    extensions: [Document, Text, Comment],
+    content: initialContent,
     onCreate: ({ editor }) => {
       console.log("TipTap editor initialized");
-      console.log("Editor content set to:", editor.getHTML()); // Debug: Verify content
+      console.log("Editor content after init:", editor.getHTML());
     },
     onUpdate: ({ editor }) => {
       currentEdit.text = editor.getHTML();
@@ -66,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.display = 'block';
 
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = null; // Clear old listeners
+    commentBtn.onclick = null;
     commentBtn.addEventListener('click', () => addComment(from, to));
   }
 
