@@ -73,7 +73,12 @@ document.addEventListener("DOMContentLoaded", () => {
           class: 'suggestion posted' 
         }, deleted ? `<s>${deleted}</s>` : '', `<span class="suggestion-text">${added || comment.text}</span>`];
       }
-      return ['span', { 'data-suggestion-id': mark.attrs.id, class: 'suggestion' }, mark.attrs.original || ''];
+      return ['span', { 
+        'data-suggestion-id': mark.attrs.id, 
+        class: 'suggestion' + (comment && comment.isTyping ? '' : ' posted'), 
+        'data-suggestion-text': mark.attrs.text, 
+        'data-suggestion-original': mark.attrs.original 
+      }, mark.attrs.original || ''];
     }
   });
 
@@ -99,6 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
         currentEdit.comments.forEach(comment => {
           if (!comment.isSuggestion && comment.timestamp) {
             editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id, posted: true }).run();
+          } else if (comment.isSuggestion && comment.timestamp) {
+            editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
           }
         });
       }
@@ -208,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-    activeCommentId = commentId; // Track new bubble
+    activeCommentId = commentId;
     renderComments();
   }
 
@@ -237,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
-      activeCommentId = null; // Clear active bubble
+      activeCommentId = null;
       renderComments();
     }
   }
@@ -247,10 +254,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (comment.isSuggestion && comment.isTyping) {
         const span = editor.view.dom.querySelector(`[data-suggestion-id="${comment.id}"]`);
         if (span) {
-          comment.text = span.textContent;
+          const newText = span.textContent;
+          comment.text = newText;
           comment.isTyping = false;
-          comment.timestamp = new Date().toLocaleString(); // Fixed typo: 'New' to 'new'
-          editor.chain().setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
+          comment.timestamp = new Date().toLocaleString();
+          editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('suggestion', { id: comment.id, text: newText, original: comment.originalText }).run();
           console.log("Finalized suggestion:", { id: comment.id, text: comment.text, original: comment.originalText });
           span.contentEditable = false;
         }
