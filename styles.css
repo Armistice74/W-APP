@@ -184,7 +184,7 @@ input:checked + .slider:before {
 }
 
 .comment.posted {
-  background-color: #506080; /* Distinct posted color */
+  background-color: #405060; /* Slightly darker for visibility */
 }
 
 .suggestion {

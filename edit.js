@@ -199,8 +199,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (comment && comment.isTyping) {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      // Reapply the mark to ensure it persists
-      editor.chain().focus().setTextSelection(comment.range).setMark('comment', { id: comment.id }).run();
+      // Reapply mark with range to ensure persistence
+      console.log("Reapplying comment mark:", { id: comment.id, range: comment.range });
+      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id }).run();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
