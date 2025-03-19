@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   let comments = currentEdit.comments || [];
+  let activeBubble = null; // Track the current typing bubble
 
   function showToolBubble(from, to) {
     let bubble = document.getElementById('tool-bubble');
@@ -84,8 +85,10 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.display = 'block';
 
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = null;
-    commentBtn.addEventListener('click', () => addComment(from, to));
+    commentBtn.onclick = null; // Clear old listeners
+    commentBtn.addEventListener('click', () => {
+      if (!activeBubble) addComment(from, to); // Only add if no active bubble
+    });
   }
 
   function hideToolBubble() {
@@ -99,11 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentWindow = document.getElementById('comments');
     const speechBubble = document.createElement('div');
     speechBubble.className = 'speech-bubble';
-    speechBubble.dataset.commentId = commentId; // Tie to comment ID
+    speechBubble.dataset.commentId = commentId;
     speechBubble.innerHTML = `
       <textarea placeholder="Enter comment..."></textarea>
       <button class="confirm-btn">Confirm</button>
     `;
+    activeBubble = speechBubble; // Track this as the active bubble
     commentWindow.appendChild(speechBubble);
 
     const textarea = speechBubble.querySelector('textarea');
@@ -113,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function adjustBubbleSize(bubble, textarea) {
     bubble.style.height = 'auto';
-    bubble.style.height = `${textarea.scrollHeight + 40}px`; // Fixed height for typing
+    bubble.style.height = `${textarea.scrollHeight + 40}px`;
   }
 
   function postComment(id, from, to, text, bubble) {
@@ -130,20 +134,28 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     bubble.style.height = `${Math.min(text.split('\n').length, maxLines) * lineHeight + 20}px`;
     bubble.classList.add('posted');
-    bubble.classList.remove('speech-bubble'); // Transform to posted state
-    renderComments(); // Refresh all comments to stack properly
+    bubble.classList.remove('speech-bubble');
+    activeBubble = null; // Clear active bubble after posting
+    renderComments(); // Re-render all comments
   }
 
   function renderComments() {
     const commentWindow = document.getElementById('comments');
-    commentWindow.innerHTML = ''; // Clear and rebuild
+    commentWindow.innerHTML = ''; // Clear existing
+
+    // Sort comments by range.from (first highlighted character)
+    comments.sort((a, b) => a.range.from - b.range.from);
+
     comments.forEach(comment => {
+      // Skip if this is the active typing bubble
+      if (activeBubble && activeBubble.dataset.commentId === comment.id) return;
+
       const bubble = document.createElement('div');
       bubble.className = 'speech-bubble posted';
       bubble.dataset.commentId = comment.id;
       const maxLines = 3;
       const lineHeight = 20;
-      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (comment.text.split('\n').length > maxLines ? '...' : '');
+      const truncated = comment.text.split('\n').slice(0, maxLines).join('\n') + (text.split('\n').length > maxLines ? '...' : '');
       bubble.innerHTML = `
         <p>${truncated}</p>
         ${comment.text.split('\n').length > maxLines ? '<span class="show-more">show more</span>' : ''}
@@ -158,5 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     });
+
+    // Re-append active bubble if it exists (keeps it live while typing)
+    if (activeBubble) commentWindow.appendChild(activeBubble);
   }
 });
