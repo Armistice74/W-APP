@@ -39,7 +39,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHTML({ mark }) {
       const isPosted = comments.find(c => c.id === mark.attrs.id && !c.isTyping);
       console.log("Rendering comment mark:", { id: mark.attrs.id, isPosted });
-      return ['span', { 'data-comment-id': mark.attrs.id, class: 'comment' + (isPosted ? ' posted' : '') }, 0];
+      return ['span', { 
+        'data-comment-id': mark.attrs.id, 
+        class: 'comment' + (isPosted ? ' posted' : ''), 
+        'data-comment-posted': isPosted ? 'true' : 'false' 
+      }, 0];
     }
   });
 
@@ -173,9 +177,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const commentId = Date.now().toString();
-    console.log("Adding comment:", { id: commentId, from, to });
-    editor.chain().setMark('comment', { id: commentId }).run();
-    comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
+    // Trim selection to avoid extra spaces
+    const text = editor.state.doc.textBetween(from, to).trim();
+    const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - text.length) / 2;
+    const adjustedTo = to - (editor.state.doc.textBetween(from, to).length - text.length) / 2;
+    console.log("Adding comment:", { id: commentId, from: adjustedFrom, to: adjustedTo, text });
+    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('comment', { id: commentId }).run();
+    comments.push({ id: commentId, text: '', range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     renderComments();
@@ -183,10 +191,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function addSuggestion(from, to) {
     const commentId = Date.now().toString();
-    const originalText = editor.state.doc.textBetween(from, to);
-    console.log("Adding suggestion:", { id: commentId, from, to, originalText });
-    editor.chain().setMark('suggestion', { id: commentId, text: originalText, original: originalText }).run();
-    comments.push({ id: commentId, text: originalText, originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
+    const originalText = editor.state.doc.textBetween(from, to).trim();
+    const adjustedFrom = from + (editor.state.doc.textBetween(from, to).length - originalText.length) / 2;
+    const adjustedTo = to - (editor.state.doc.textBetween(from, to).length - originalText.length) / 2;
+    console.log("Adding suggestion:", { id: commentId, from: adjustedFrom, to: adjustedTo, originalText });
+    editor.chain().setTextSelection({ from: adjustedFrom, to: adjustedTo }).setMark('suggestion', { id: commentId, text: originalText, original: originalText }).run();
+    comments.push({ id: commentId, text: originalText, originalText, range: { from: adjustedFrom, to: adjustedTo }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     const span = editor.view.dom.querySelector(`[data-suggestion-id="${commentId}"]`);
@@ -199,14 +209,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (comment && comment.isTyping) {
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      // Reapply mark with range to ensure persistence
-      console.log("Reapplying comment mark:", { id: comment.id, range: comment.range });
-      editor.chain().setTextSelection({ from: comment.range.from, to: comment.range.to }).setMark('comment', { id: comment.id }).run();
+      // Manually apply mark with ProseMirror transaction
+      const tr = editor.state.tr;
+      tr.addMark(comment.range.from, comment.range.to, editor.schema.marks.comment.create({ id: comment.id }));
+      editor.view.dispatch(tr);
+      console.log("Posted comment, mark reapplied:", { id: comment.id, range: comment.range });
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
       console.log("Posted comment, stack order:", comments.map(c => ({ id: c.id, from: c.range.from })));
       renderComments();
-      editor.view.dispatch(editor.state.tr);
     }
   }
 

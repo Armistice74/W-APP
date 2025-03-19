@@ -186,7 +186,7 @@ input:checked + .slider:before {
 }
 
 .comment.posted {
-  background-color: #000000; /* Black for max visibility - temp test */
+  background-color: #000000; /* Black for max visibility */
   position: relative;
   z-index: 1; /* Bring to front */
 }
