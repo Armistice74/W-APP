@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
     comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
-    currentEdit.comments = comments redistribute();
+    currentEdit.comments = comments; // Fixed typo: removed 'redistribute()'
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
     renderComments();
   }
@@ -297,8 +297,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isSuggestionMode()) {
       const selection = window.getSelection();
       const range = selection.getRangeAt(0);
-      const start = range.startOffset;
-      const end = range.endOffset;
+      const start = editor.state.doc.resolve(range.startOffset).pos;
+      const end = editor.state.doc.resolve(range.endOffset).pos;
       const node = range.startContainer.parentElement;
       if (node && node.dataset.suggestionId) {
         const commentId = node.dataset.suggestionId;
@@ -306,8 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (comment) {
           comment.text = node.textContent;
           console.log("Suggestion updated live:", { id: commentId, text: comment.text });
-        } else {
-          addSuggestion(start, end);
         }
       } else if (range.startContainer.nodeType === 3) {
         addSuggestion(start, end);
