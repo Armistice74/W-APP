@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.style.display = 'block';
 
     const commentBtn = document.getElementById('tool-comment-btn');
-    commentBtn.onclick = () => addComment(from, to); // Single listener, no stacking
+    commentBtn.onclick = () => addComment(from, to);
   }
 
   function hideToolBubble() {
@@ -95,40 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function addComment(from, to) {
     if (comments.some(c => c.isTyping)) {
       console.log("Blocked: Already typing a comment");
-      return; // Block new comments while typing
+      return;
     }
     const commentId = Date.now().toString();
     console.log("Adding comment:", { id: commentId, from, to });
     editor.chain().setMark('comment', { id: commentId }).run();
-
-    const comment = { id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true };
-    comments.push(comment);
+    comments.push({ id: commentId, text: '', range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-
-    const commentWindow = document.getElementById('comments');
-    const speechBubble = document.createElement('div');
-    speechBubble.className = 'speech-bubble';
-    speechBubble.dataset.commentId = commentId;
-    speechBubble.innerHTML = `
-      <textarea placeholder="Enter comment..."></textarea>
-      <button class="confirm-btn">Confirm</button>
-    `;
-    commentWindow.appendChild(speechBubble); // Append first, then wire up
-
-    const textarea = speechBubble.querySelector('textarea');
-    const confirmBtn = speechBubble.querySelector('.confirm-btn');
-    textarea.oninput = () => {
-      comment.text = textarea.value;
-      adjustBubbleSize(speechBubble, textarea);
-    };
-    confirmBtn.onclick = () => {
-      console.log("Confirm clicked for:", commentId);
-      postComment(commentId);
-    };
-    textarea.focus();
-
-    renderComments(); // Re-render stack
+    renderComments();
   }
 
   function adjustBubbleSize(bubble, textarea) {
@@ -158,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     comments.forEach(comment => {
       const existing = commentWindow.querySelector(`[data-comment-id="${comment.id}"]`);
-      if (existing) return; // Skip if already in DOM
+      if (existing) return;
 
       const bubble = document.createElement('div');
       bubble.className = 'speech-bubble' + (comment.isTyping ? '' : ' posted');
@@ -169,6 +144,17 @@ document.addEventListener("DOMContentLoaded", () => {
           <textarea placeholder="Enter comment...">${comment.text}</textarea>
           <button class="confirm-btn">Confirm</button>
         `;
+        const textarea = bubble.querySelector('textarea');
+        const confirmBtn = bubble.querySelector('.confirm-btn');
+        textarea.oninput = () => {
+          comment.text = textarea.value;
+          adjustBubbleSize(bubble, textarea);
+        };
+        confirmBtn.onclick = () => {
+          console.log("Confirm clicked for:", comment.id);
+          postComment(comment.id);
+        };
+        setTimeout(() => textarea.focus(), 0); // Ensure focus after render
       } else {
         const maxLines = 3;
         const lineHeight = 20;
