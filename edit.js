@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const { Editor, Mark } = window.TiptapBundle;
-  const StarterKit = window.TiptapBundle.StarterKit;
 
   const Comment = Mark.create({
     name: 'comment',
@@ -31,45 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const Underline = {
-    name: 'underline',
-    addCommands() {
-      return {
-        toggleUnderline: () => ({ chain }) => chain().toggleMark('underline').run()
-      };
-    },
-    parseHTML() {
-      return [{ tag: 'u' }];
-    },
-    renderHTML() {
-      return ['u', 0];
-    }
-  };
-
-  const FontSize = Mark.create({
-    name: 'fontSize',
-    addAttributes() {
-      return { size: { default: null, parseHTML: element => element.style.fontSize, renderHTML: attributes => ({ style: `font-size: ${attributes.size}` }) } };
-    },
-    parseHTML() {
-      return [{ tag: 'span[style*=font-size]' }];
-    },
-    renderHTML({ mark }) {
-      return ['span', { style: `font-size: ${mark.attrs.size}` }, 0];
-    },
-    addCommands() {
-      return { setFontSize: size => ({ chain }) => chain().setMark('fontSize', { size }).run() };
-    }
-  });
-
   const editor = new Editor({
     element: document.getElementById("editor"),
-    extensions: [
-      StarterKit.configure({ bulletList: { keepMarks: true }, orderedList: { keepMarks: true } }),
-      Comment,
-      Underline,
-      FontSize
-    ],
+    extensions: [Comment],
     content: currentEdit.text || "<p>Start editing...</p>",
     onCreate: () => console.log("TipTap editor initialized"),
     onUpdate: ({ editor }) => {
@@ -80,19 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const { from, to } = editor.state.selection;
       if (from !== to) showToolBubble(from, to);
       else hideToolBubble();
-      ['bold', 'italic', 'underline'].forEach(mark => {
-        document.getElementById(`${mark}-btn`).classList.toggle('active', editor.isActive(mark));
-      });
     }
-  });
-
-  document.getElementById('bold-btn').addEventListener('click', () => editor.chain().focus().toggleBold().run());
-  document.getElementById('italic-btn').addEventListener('click', () => editor.chain().focus().toggleItalic().run());
-  document.getElementById('underline-btn').addEventListener('click', () => editor.chain().focus().toggleUnderline().run());
-  document.getElementById('font-size').addEventListener('change', (e) => editor.chain().focus().setFontSize(e.target.value).run());
-  document.getElementById('comment-btn').addEventListener('click', () => {
-    const { from, to } = editor.state.selection;
-    if (from !== to) addComment(from, to);
   });
 
   let comments = currentEdit.comments || [];
@@ -102,14 +53,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!bubble) {
       bubble = document.createElement('div');
       bubble.id = 'tool-bubble';
-      bubble.innerHTML = '<button id="comment-btn">Comment</button>';
+      bubble.innerHTML = '<button id="tool-comment-btn">Comment</button>';
       document.body.appendChild(bubble);
-      document.getElementById('comment-btn').addEventListener('click', () => addComment(from, to));
     }
     const rect = editor.view.coordsAtPos(from);
     bubble.style.left = `${rect.left + window.scrollX}px`;
     bubble.style.top = `${rect.top + window.scrollY - 40}px`;
     bubble.style.display = 'block';
+
+    // Ensure the button listener is added only once or re-added correctly
+    const commentBtn = document.getElementById('tool-comment-btn');
+    commentBtn.onclick = null; // Clear any old listeners
+    commentBtn.addEventListener('click', () => addComment(from, to));
   }
 
   function hideToolBubble() {
