@@ -110,6 +110,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
       renderComments();
+
+      // Mutation observer to strip spaces around comment spans
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            document.querySelectorAll('span[data-comment-id]').forEach(span => {
+              const prev = span.previousSibling;
+              const next = span.nextSibling;
+              if (prev && prev.nodeType === 3 && prev.textContent.trim() === '') {
+                console.log("Removing leading space node:", prev.textContent);
+                prev.remove();
+              }
+              if (next && next.nodeType === 3 && next.textContent.trim() === '') {
+                console.log("Removing trailing space node:", next.textContent);
+                next.remove();
+              }
+            });
+          }
+        });
+      });
+      observer.observe(editor.view.dom, { childList: true, subtree: true });
     },
     onUpdate: ({ editor }) => {
       currentEdit.text = editor.getHTML();
