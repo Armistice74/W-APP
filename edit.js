@@ -44,19 +44,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const Suggestion = Mark.create({
     name: 'suggestion',
     addAttributes() {
-      return { id: { default: null }, text: { default: '' } };
+      return { id: { default: null }, text: { default: '' }, original: { default: '' } };
     },
     parseHTML() {
-      return [{ tag: 'span[data-suggestion-id]', getAttrs: dom => ({ id: dom.getAttribute('data-suggestion-id'), text: dom.getAttribute('data-suggestion-text') }) }];
+      return [{ tag: 'span[data-suggestion-id]', getAttrs: dom => ({ 
+        id: dom.getAttribute('data-suggestion-id'), 
+        text: dom.getAttribute('data-suggestion-text'), 
+        original: dom.getAttribute('data-suggestion-original') 
+      }) }];
     },
     renderHTML({ mark }) {
       const comment = comments.find(c => c.id === mark.attrs.id && c.isSuggestion);
-      if (comment && comment.text) {
-        return ['span', { 'data-suggestion-id': mark.attrs.id, 'data-suggestion-text': mark.attrs.text, class: 'suggestion posted' }, 
-          `<s>${comment.originalText || ''}</s> <span class="suggestion-text">${mark.attrs.text || ''}</span>`
-        ];
+      if (comment && comment.text !== comment.originalText) {
+        const deleted = comment.originalText.split('').filter(c => !comment.text.includes(c)).join('');
+        const added = comment.text.split('').filter(c => !comment.originalText.includes(c)).join('');
+        return ['span', { 
+          'data-suggestion-id': mark.attrs.id, 
+          'data-suggestion-text': mark.attrs.text, 
+          'data-suggestion-original': mark.attrs.original, 
+          class: 'suggestion posted' 
+        }, deleted ? `<s>${deleted}</s>` : '', `<span class="suggestion-text">${added || comment.text}</span>`];
       }
-      return ['span', { 'data-suggestion-id': mark.attrs.id, class: 'suggestion' }, 0];
+      return ['span', { 'data-suggestion-id': mark.attrs.id, class: 'suggestion' }, mark.attrs.original || ''];
     }
   });
 
@@ -173,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const commentId = Date.now().toString();
     const originalText = editor.state.doc.textBetween(from, to);
     console.log("Adding suggestion:", { id: commentId, from, to, originalText });
-    editor.chain().setMark('suggestion', { id: commentId, text: '' }).run();
+    editor.chain().setMark('suggestion', { id: commentId, text: originalText, original: originalText }).run();
     comments.push({ id: commentId, text: originalText, originalText, range: { from, to }, user: localStorage.getItem("currentUser"), timestamp: null, isTyping: true, isSuggestion: true });
     currentEdit.comments = comments;
     sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
@@ -201,11 +210,10 @@ document.addEventListener("DOMContentLoaded", () => {
       comment.text = newText;
       comment.isTyping = false;
       comment.timestamp = new Date().toLocaleString();
-      editor.chain().setMark('suggestion', { id: comment.id, text: comment.text }).run();
+      editor.chain().setMark('suggestion', { id: comment.id, text: comment.text, original: comment.originalText }).run();
       currentEdit.comments = comments;
       sessionStorage.setItem("currentEdit", JSON.stringify(currentEdit));
-      console.log("Posted suggestion:", { id: comment.id, text: comment.text });
-      document.getElementById(`suggestion-confirm-${id}`)?.remove();
+      console.log("Posted suggestion:", { id: comment.id, text: comment.text, original: comment.originalText });
       span.contentEditable = false;
       editor.view.dispatch(editor.state.tr);
     }
@@ -281,26 +289,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderSuggestionInline(commentId, from, to) {
-    const rect = editor.view.coordsAtPos(from);
-    const confirmBtn = document.createElement('div');
-    confirmBtn.id = `suggestion-confirm-${commentId}`;
-    confirmBtn.className = 'suggestion-confirm';
-    confirmBtn.style.left = `${rect.left + window.scrollX}px`;
-    confirmBtn.style.top = `${rect.bottom + window.scrollY + 5}px`;
-    confirmBtn.innerHTML = `<button class="confirm-btn">Confirm</button>`;
-    document.body.appendChild(confirmBtn);
-
-    const comment = comments.find(c => c.id === commentId);
     const span = editor.view.dom.querySelector(`[data-suggestion-id="${commentId}"]`);
     span.contentEditable = true;
     span.focus();
 
+    const comment = comments.find(c => c.id === commentId);
     span.oninput = () => {
       comment.text = span.textContent;
     };
-    confirmBtn.querySelector('.confirm-btn').onclick = () => {
-      console.log("Confirm clicked for suggestion:", commentId);
+    span.onblur = () => {
+      console.log("Suggestion blur:", commentId);
       postSuggestion(commentId);
+    };
+    span.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        console.log("Suggestion Enter:", commentId);
+        postSuggestion(commentId);
+      }
     };
   }
 });
